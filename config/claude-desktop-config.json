@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "claude-command-runner": {
+      "command": "/Users/rogers/GitHub/MCP Directory/claude-command-runner/.build/release/claude-command-runner",
+      "args": ["--port", "9876", "--verbose"]
+    }
+  }
+}
