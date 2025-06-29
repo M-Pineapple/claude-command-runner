@@ -204,6 +204,13 @@ We welcome contributions! Please:
 
 MIT License - see LICENSE file for details
 
+## Acknowledgments
+
+- Anthropic MCP team for the protocol specification
+- Warp team for the excellent terminal
+- Swift community for the amazing tooling
+- Special thanks to Rogers for the vision and persistence in making this happen!
+
 ---
 
-**Built with ❤️ by 🍍**
+**Built with ❤️ by Claude and Rogers**

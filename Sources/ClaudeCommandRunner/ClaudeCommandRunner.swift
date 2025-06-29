@@ -54,6 +54,12 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
     @Flag(name: .long, help: "Enable verbose logging")
     var verbose: Bool = false
     
+    @Flag(name: .long, help: "Initialize configuration with example")
+    var initConfig: Bool = false
+    
+    @Flag(name: .long, help: "Validate configuration")
+    var validateConfig: Bool = false
+    
     mutating func run() async throws {
         // Configure logging
         let logLevelStr = logLevel
@@ -65,10 +71,39 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         
         let logger = Logger(label: "com.claude.command-runner")
         
+        // Handle configuration operations
+        if initConfig {
+            try ConfigurationManager.initializeWithExample(logger: logger)
+            print("Configuration initialized at \(ConfigurationManager.configDirectoryPath)")
+            return
+        }
+        
+        // Load configuration
+        let configManager = ConfigurationManager(logger: logger)
+        let config = configManager.current
+        
+        if validateConfig {
+            let errors = configManager.validate()
+            if errors.isEmpty {
+                print("✅ Configuration is valid")
+            } else {
+                print("❌ Configuration errors:")
+                for error in errors {
+                    print("  - \(error)")
+                }
+            }
+            return
+        }
+        
+        // Override with command line arguments if provided
+        let actualPort = port != 9876 ? port : config.port
+        let actualLogLevel = logLevel != "info" ? logLevel : config.logging.level
+        
         if verbose {
             logger.info("Starting Claude Command Runner MCP Server v2.0...")
-            logger.info("Port: \(port)")
+            logger.info("Port: \(actualPort)")
             logger.info("Two-way communication: ENABLED")
+            logger.info("Configuration loaded from: \(ConfigurationManager.configDirectoryPath)")
         }
         
         // Create the MCP server
@@ -172,15 +207,18 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
             case "suggest_command":
                 return try await handleSuggestCommand(params: params, logger: logger)
             case "execute_command":
-                return try await handleExecuteCommandV2(params: params, logger: logger)
+                return try await handleExecuteCommandV2(params: params, logger: logger, config: config)
             case "execute_with_auto_retrieve":
-                return try await handleExecuteWithAutoRetrieve(params: params, logger: logger)
+                return try await handleExecuteWithAutoRetrieve(params: params, logger: logger, config: config)
             case "preview_command":
                 return try await handlePreviewCommand(params: params, logger: logger)
             case "get_command_output":
                 return try await handleGetCommandOutput(params: params, logger: logger)
             default:
-                throw MCPError.invalidParams("Unknown tool: \(params.name)")
+                return CallTool.Result(
+                    content: [.text("Unknown tool: \(params.name)")],
+                    isError: true
+                )
             }
         }
         
@@ -189,7 +227,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         let mcpService = MCPService(server: server, transport: transport)
         
         // Create command receiver service
-        let commandReceiver = CommandReceiverService(port: port, server: server, logger: logger)
+        let commandReceiver = CommandReceiverService(port: actualPort, server: server, logger: logger)
         
         // Create service group
         let serviceGroup = ServiceGroup(
@@ -199,7 +237,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         )
         
         logger.info("MCP Server started successfully")
-        logger.info("Command receiver listening on port \(port)")
+        logger.info("Command receiver listening on port \(actualPort)")
         
         // Run the service group
         try await serviceGroup.run()
@@ -216,145 +254,17 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
     }
 }
 
-// Tool handlers
-func handleSuggestCommand(params: CallTool.Parameters, logger: Logger) async throws -> CallTool.Result {
-    guard let arguments = params.arguments,
-          let query = arguments["query"],
-          case .string(let queryString) = query else {
-        throw MCPError.invalidParams("Missing or invalid 'query' parameter")
-    }
-    
-    logger.debug("Suggesting command for query: \(queryString)")
-    
-    let response = """
-    Based on your request: "\(queryString)"
-    
-    I'll help you with that command. Let me execute it for you.
-    """
-    
-    return CallTool.Result(content: [.text(response)], isError: false)
-}
-
-// Enhanced execute command with output capture
-func handleExecuteCommandV2(params: CallTool.Parameters, logger: Logger) async throws -> CallTool.Result {
-    guard let arguments = params.arguments,
-          let command = arguments["command"],
-          case .string(let commandString) = command else {
-        throw MCPError.invalidParams("Missing or invalid 'command' parameter")
-    }
-    
-    var workingDirectory: String?
-    if let dir = arguments["working_directory"],
-       case .string(let dirString) = dir {
-        workingDirectory = dirString
-    }
-    
-    // Generate unique command ID
-    let commandId = UUID().uuidString
-    logger.info("Executing command with ID: \(commandId)")
-    logger.info("Command: \(commandString)")
-    
-    // Build the full command with working directory if needed
-    var fullCommand = commandString
-    if let workingDirectory = workingDirectory {
-        fullCommand = "cd \"\(workingDirectory)\" && \(commandString)"
-    }
-    
-    // Create the output capture script
-    let scriptContent = createOutputCaptureScript(command: fullCommand, commandId: commandId)
-    let tempScriptFile = "/tmp/claude_script_\(commandId).sh"
-    
-    do {
-        try scriptContent.write(toFile: tempScriptFile, atomically: true, encoding: .utf8)
-        // Make script executable
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tempScriptFile)
-    } catch {
-        logger.error("Failed to write script file: \(error)")
-        return CallTool.Result(
-            content: [.text("Failed to prepare command: \(error.localizedDescription)")],
-            isError: true
-        )
-    }
-    
-    // Send to Warp Preview using AppleScript
-    let bashCommand = "bash \(tempScriptFile)"
-    let appleScript = """
-    tell application "WarpPreview" to activate
-    delay 0.5
-    tell application "System Events"
-        keystroke "\(bashCommand)"
-    end tell
-    """
-    
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-    process.arguments = ["-e", appleScript]
-    
-    let outputPipe = Pipe()
-    let errorPipe = Pipe()
-    process.standardOutput = outputPipe
-    process.standardError = errorPipe
-    
-    do {
-        try process.run()
-        process.waitUntilExit()
-        
-        if process.terminationStatus == 0 {
-            // Command sent successfully
-            logger.info("Command sent to Warp Preview, monitoring for output...")
-            
-            // Start monitoring for output in background
-            Task {
-                if let result = try? await waitForCommandOutput(commandId: commandId, timeout: 60, logger: logger) {
-                    logger.info("Command output received:")
-                    logger.info("Exit code: \(result.exitCode)")
-                    logger.info("Output: \(result.output)")
-                    if !result.error.isEmpty {
-                        logger.info("Error: \(result.error)")
-                    }
-                    
-                    // Store the result for retrieval
-                    await commandResultsStore.store(result)
-                } else {
-                    logger.warning("Timeout waiting for command output")
-                }
-            }
-            
-            let result = """
-            ✅ Command sent to Warp Terminal:
-            \(commandString)
-            
-            📋 Command ID: \(commandId)
-            
-            ⚠️  Please review and press Enter in Warp to execute.
-            
-            💡 I'll automatically capture the output. Use 'get_command_output' or wait a moment for the results.
-            """
-            
-            return CallTool.Result(content: [.text(result)], isError: false)
-        } else {
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-            let error = String(data: errorData, encoding: .utf8) ?? "Unknown error"
-            logger.error("Failed to send command to Warp: \(error)")
-            return CallTool.Result(
-                content: [.text("Failed to send command to Warp Terminal: \(error)")],
-                isError: true
-            )
-        }
-    } catch {
-        logger.error("Failed to send command: \(error)")
-        return CallTool.Result(
-            content: [.text("Failed to send command: \(error.localizedDescription)")],
-            isError: true
-        )
-    }
-}
+// Import the enhanced suggest command handler
+// The basic implementation is replaced by CommandSuggestionEngine.swift
 
 func handlePreviewCommand(params: CallTool.Parameters, logger: Logger) async throws -> CallTool.Result {
     guard let arguments = params.arguments,
           let command = arguments["command"],
           case .string(let commandString) = command else {
-        throw MCPError.invalidParams("Missing or invalid 'command' parameter")
+        return CallTool.Result(
+            content: [.text("Missing or invalid 'command' parameter")],
+            isError: true
+        )
     }
     
     logger.debug("Previewing command: \(commandString)")
@@ -493,6 +403,65 @@ func createOutputCaptureScript(command: String, commandId: String) -> String {
     
     exit $EXIT_CODE
     """
+}
+
+/// Create AppleScript for different terminal types
+private func createAppleScript(for terminal: TerminalConfig.TerminalType, command: String) -> String {
+    switch terminal {
+    case .warp, .warpPreview:
+        return """
+        tell application "\(terminal.rawValue)" to activate
+        delay 0.5
+        tell application "System Events"
+            keystroke "\(command)"
+        end tell
+        """
+        
+    case .iterm2:
+        return """
+        tell application "iTerm"
+            activate
+            
+            -- Get current terminal window or create new one
+            if (count of windows) = 0 then
+                create window with default profile
+            end if
+            
+            tell current window
+                tell current session
+                    write text "\(command)"
+                end tell
+            end tell
+        end tell
+        """
+        
+    case .terminal:
+        return """
+        tell application "Terminal"
+            activate
+            
+            -- Check if Terminal has windows
+            if (count of windows) = 0 then
+                do script "\(command)"
+            else
+                -- Use the frontmost window
+                tell front window
+                    do script "\(command)" in selected tab
+                end tell
+            end if
+        end tell
+        """
+        
+    case .alacritty:
+        // Alacritty doesn't have AppleScript support, use keyboard events
+        return """
+        tell application "Alacritty" to activate
+        delay 0.5
+        tell application "System Events"
+            keystroke "\(command)"
+        end tell
+        """
+    }
 }
 
 // Function to wait for and retrieve command output
