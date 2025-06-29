@@ -57,7 +57,7 @@ Claude Command Runner revolutionizes the development workflow by allowing you to
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/claude-command-runner.git
+git clone https://github.com/M-Pineapple/claude-command-runner.git
 cd claude-command-runner
 ```
 
@@ -86,7 +86,7 @@ Add to your Claude Desktop MCP settings:
 }
 ```
 
-### Terminal Configuration
+### Warp Terminal Configuration
 
 Edit `~/.claude-command-runner/config.json` to set your preferred terminal:
 
@@ -248,4 +248,4 @@ MIT License - see LICENSE file for details
 
 ---
 
-**Built with ❤️ by Claude and Rogers**
+**Built with ❤️ by 🍍**
