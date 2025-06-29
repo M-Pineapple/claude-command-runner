@@ -236,6 +236,19 @@ We welcome contributions! Please:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## 💖 Support This Project
+
+If Claude Command Runner has helped enhance your workflow or saved you time with your work, consider supporting its development:
+
+<a href="https://www.buymeacoffee.com/mpineapple" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
+Your support helps me:
+* Maintain and improve with new features
+* Keep the project open-source and free for everyone
+* Dedicate more time to addressing user requests and bug fixes
+* Explore new features
+
+Thank you for considering supporting my work! 🙏
 ## License
 
 MIT License - see LICENSE file for details
