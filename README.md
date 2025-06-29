@@ -23,13 +23,35 @@ Claude Command Runner revolutionizes the development workflow by allowing you to
 - ✅ Automatic output retrieval eliminates workflow friction
 - ✅ Full command history and output tracking
 
+## 📊 Terminal Compatibility
+
+### Feature Comparison by Terminal
+
+| Feature | Warp | Terminal.app | iTerm2 | Alacritty | Description |
+|---------|------|--------------|---------|-----------|-------------|
+| **Send Commands** | ✅ | ✅ | ✅ | ✅ | Basic command sending to terminal |
+| **Auto Output Capture** | ✅ | ❌ | ❌ | ❌ | Automatically retrieve command results |
+| **Exit Code Tracking** | ✅ | ❌ | ❌ | ❌ | Know if commands succeeded or failed |
+| **Command Duration** | ✅ | ❌ | ❌ | ❌ | Track how long commands take |
+| **History Integration** | ✅ | ❌ | ❌ | ❌ | Access and learn from past commands |
+| **Smart Suggestions** | ✅ | ⚠️ | ⚠️ | ⚠️ | AI-powered command suggestions |
+| **Analytics** | ✅ | ❌ | ❌ | ❌ | Command usage statistics |
+
+**Legend:** ✅ Full Support | ⚠️ Limited Support | ❌ Not Supported
+
+> **💡 Recommendation:** For the best experience with all features, use **Warp Terminal**. Other terminals provide basic command sending only.
+
 ## Installation
 
 ### Prerequisites
 - macOS 13.0 or later
 - Swift 6.0+ (Xcode 16+)
-- Warp Terminal or Warp Preview
 - Claude Desktop
+- A supported terminal:
+  - **Warp Terminal** (recommended for full features)
+  - Terminal.app (basic support)
+  - iTerm2 (basic support)
+  - Alacritty (basic support)
 
 ### Quick Install
 
@@ -60,6 +82,19 @@ Add to your Claude Desktop MCP settings:
     "command": "/path/to/claude-command-runner/.build/release/claude-command-runner",
     "args": ["--port", "9876"],
     "env": {}
+  }
+}
+```
+
+### Terminal Configuration
+
+Edit `~/.claude-command-runner/config.json` to set your preferred terminal:
+
+```json
+{
+  "terminal": {
+    "preferred": "Warp",  // Options: "Warp", "Terminal.app", "iTerm2", "Alacritty"
+    "fallbackOrder": ["Warp", "iTerm2", "Terminal.app", "Alacritty"]
   }
 }
 ```
