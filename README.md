@@ -213,4 +213,4 @@ MIT License - see LICENSE file for details
 
 ---
 
-**Built with ❤️ by Claude and 🍍**
+**Built with ❤️ by 🍍**
