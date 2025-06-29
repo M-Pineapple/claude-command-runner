@@ -1,4 +1,4 @@
-# Claude Command Runner
+# Claude Command Runner for Warp Terminal 
 
 A powerful Model Context Protocol (MCP) server that bridges Claude Desktop and Warp Terminal, enabling seamless command execution with two-way communication and automatic output retrieval.
 
