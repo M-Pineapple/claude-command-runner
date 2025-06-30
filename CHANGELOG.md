@@ -5,6 +5,17 @@ All notable changes to Claude Command Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2025-06-30
+
+### Fixed
+- Added database logging diagnostics to identify command save failures
+- Enhanced error reporting for SQLite operations
+- Improved database connection verification
+
+### Known Issues
+- Database command logging not functioning - investigation ongoing
+- Command suggestions returning empty results
+
 ## [2.2.0] - 2025-06-29
 
 ### Added
@@ -12,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Terminal Auto-Detection**: Automatically detects and configures available terminals
 - **Configuration System**: Comprehensive config file at `~/.claude-command-runner/config.json`
 - **Config Manager Tool**: CLI utility for managing configuration
-- **Command History Export**: Export commands to JSON, CSV, or Markdown formats
+
 - **Installation Script**: Automated setup with `install.sh`
 - **Terminal Fallback System**: Automatic fallback to available terminals
 - **Warp Database Integration**: Direct access to Warp's SQLite command history
