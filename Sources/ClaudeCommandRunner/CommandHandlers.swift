@@ -36,7 +36,12 @@ func handleExecuteCommandV2(params: CallTool.Parameters, logger: Logger, config:
         projectId: projectId
     )
     
-    _ = DatabaseManager.shared.saveCommand(commandRecord)
+    let saveResult = DatabaseManager.shared.saveCommand(commandRecord)
+    if !saveResult {
+        logger.error("Failed to save command to database: \(commandId)")
+    } else {
+        logger.info("Command saved to database: \(commandId)")
+    }
     
     // Record analytics event
     DatabaseManager.shared.recordAnalyticsEvent("command_executed", data: [

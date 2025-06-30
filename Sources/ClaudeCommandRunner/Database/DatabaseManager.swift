@@ -37,12 +37,15 @@ public class DatabaseManager {
         print("[DatabaseManager] Setting up database at: \(dbPath)")
         
         // Open database
-        if sqlite3_open(dbPath, &db) != SQLITE_OK {
+        let result = sqlite3_open(dbPath, &db)
+        if result != SQLITE_OK {
             print("[DatabaseManager] Error opening database: \(String(cString: sqlite3_errmsg(db)))")
+            print("[DatabaseManager] SQLite error code: \(result)")
             return
         }
         
         print("[DatabaseManager] Database opened successfully")
+        print("[DatabaseManager] Database pointer: \(String(describing: db))")
         
         // Enable foreign keys
         execute("PRAGMA foreign_keys = ON")
@@ -172,7 +175,8 @@ public class DatabaseManager {
             defer { sqlite3_finalize(statement) }
             
             guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
-                print("Failed to prepare statement: \(String(cString: sqlite3_errmsg(db)))")
+                print("[DatabaseManager] Failed to prepare INSERT statement: \(String(cString: sqlite3_errmsg(db)))")
+                print("[DatabaseManager] SQL: \(sql)")
                 return false
             }
             
@@ -215,7 +219,15 @@ public class DatabaseManager {
                 sqlite3_bind_null(statement, 13)
             }
             
-            return sqlite3_step(statement) == SQLITE_DONE
+            let stepResult = sqlite3_step(statement)
+            if stepResult == SQLITE_DONE {
+                print("[DatabaseManager] Command saved successfully: \(command.id)")
+                return true
+            } else {
+                print("[DatabaseManager] Failed to save command: \(String(cString: sqlite3_errmsg(db)))")
+                print("[DatabaseManager] SQLite step result: \(stepResult)")
+                return false
+            }
         }
     }
     
