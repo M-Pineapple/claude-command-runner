@@ -2,7 +2,7 @@
   "mcpServers": {
     "claude-command-runner": {
       "type": "stdio",
-      "command": "/Users/username/GitHub/MCP Directory/claude-command-runner/.build/release/claude-command-runner",
+      "command": "/Users/username/yourfilepath/claude-command-runner/.build/release/claude-command-runner",
       "args": ["--port", "9876"],
       "env": {},
       "start_on_launch": true,
