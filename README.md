@@ -173,6 +173,35 @@ The configuration file is located at `~/.claude-command-runner/config.json`:
 2. Check if command output file exists: `ls /tmp/claude_output_*.json`
 3. For long commands, wait for timeout message then use manual retrieval
 
+### Database Not Logging Commands
+If commands execute but aren't saved to the database:
+
+1. **Check database integrity**:
+   ```bash
+   sqlite3 ~/.claude-command-runner/claude_commands.db "PRAGMA integrity_check;"
+   ```
+   
+2. **If you see errors or "missing from index" messages**, the database is corrupted:
+   ```bash
+   # Backup and remove corrupted database
+   mv ~/.claude-command-runner/claude_commands.db ~/.claude-command-runner/claude_commands.db.backup
+   # Restart Claude Desktop - a new database will be created automatically
+   ```
+
+3. **Verify database is working**:
+   ```bash
+   # Check if commands are being logged
+   sqlite3 ~/.claude-command-runner/claude_commands.db "SELECT COUNT(*) FROM commands;"
+   ```
+
+4. **Check for multiple server instances**:
+   ```bash
+   ps aux | grep claude-command-runner | grep -v grep
+   # If you see multiple instances, kill all and restart Claude Desktop
+   ```
+
+The v3.0 release includes automatic corruption detection and recovery, but if issues persist, manually removing the database file will force a clean recreation.
+
 ## Architecture
 
 ```

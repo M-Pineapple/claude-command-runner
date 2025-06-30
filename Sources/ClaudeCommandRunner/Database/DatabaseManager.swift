@@ -36,12 +36,57 @@ public class DatabaseManager {
     private func setupDatabase() {
         print("[DatabaseManager] Setting up database at: \(dbPath)")
         
-        // Open database
-        let result = sqlite3_open(dbPath, &db)
-        if result != SQLITE_OK {
-            print("[DatabaseManager] Error opening database: \(String(cString: sqlite3_errmsg(db)))")
-            print("[DatabaseManager] SQLite error code: \(result)")
-            return
+        // Check if database exists and verify integrity
+        if FileManager.default.fileExists(atPath: dbPath) {
+            print("[DatabaseManager] Existing database found, checking integrity...")
+            
+            // Open database
+            let result = sqlite3_open(dbPath, &db)
+            if result != SQLITE_OK {
+                print("[DatabaseManager] Error opening database: \(String(cString: sqlite3_errmsg(db)))")
+                print("[DatabaseManager] SQLite error code: \(result)")
+                handleCorruptedDatabase()
+                return
+            }
+            
+            // Check integrity
+            var integrityOK = true
+            let checkSQL = "PRAGMA integrity_check;"
+            var statement: OpaquePointer?
+            
+            if sqlite3_prepare_v2(db, checkSQL, -1, &statement, nil) == SQLITE_OK {
+                while sqlite3_step(statement) == SQLITE_ROW {
+                    if let result = sqlite3_column_text(statement, 0) {
+                        let resultStr = String(cString: result)
+                        if resultStr != "ok" {
+                            print("[DatabaseManager] Integrity check failed: \(resultStr)")
+                            integrityOK = false
+                            break
+                        }
+                    }
+                }
+            }
+            sqlite3_finalize(statement)
+            
+            if !integrityOK {
+                print("[DatabaseManager] Database corrupted, recreating...")
+                sqlite3_close(db)
+                db = nil
+                handleCorruptedDatabase()
+                return
+            }
+            
+            print("[DatabaseManager] Database integrity check passed")
+        } else {
+            print("[DatabaseManager] No existing database, creating new one...")
+            
+            // Create new database
+            let result = sqlite3_open(dbPath, &db)
+            if result != SQLITE_OK {
+                print("[DatabaseManager] Error creating database: \(String(cString: sqlite3_errmsg(db)))")
+                print("[DatabaseManager] SQLite error code: \(result)")
+                return
+            }
         }
         
         print("[DatabaseManager] Database opened successfully")
@@ -54,6 +99,28 @@ public class DatabaseManager {
         createTables()
         
         print("[DatabaseManager] Database setup complete")
+    }
+    
+    private func handleCorruptedDatabase() {
+        // Backup corrupted database
+        let backupPath = dbPath + ".corrupted.\(Date().timeIntervalSince1970)"
+        try? FileManager.default.moveItem(atPath: dbPath, toPath: backupPath)
+        print("[DatabaseManager] Corrupted database backed up to: \(backupPath)")
+        
+        // Create new database
+        let result = sqlite3_open(dbPath, &db)
+        if result != SQLITE_OK {
+            print("[DatabaseManager] CRITICAL: Failed to create new database: \(String(cString: sqlite3_errmsg(db)))")
+            return
+        }
+        
+        print("[DatabaseManager] New database created successfully")
+        
+        // Enable foreign keys
+        execute("PRAGMA foreign_keys = ON")
+        
+        // Create tables
+        createTables()
     }
     
     private func createTables() {

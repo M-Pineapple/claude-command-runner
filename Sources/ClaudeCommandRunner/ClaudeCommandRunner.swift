@@ -72,6 +72,11 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         
         let logger = Logger(label: "com.claude.command-runner")
         
+        // Force database initialization at startup
+        logger.info("Initializing database...")
+        _ = DatabaseManager.shared
+        logger.info("Database initialization complete")
+        
         // Handle configuration operations
         if initConfig {
             try ConfigurationManager.initializeWithExample(logger: logger)
