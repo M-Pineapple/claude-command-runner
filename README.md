@@ -6,8 +6,6 @@
 
 A powerful Model Context Protocol (MCP) server that bridges Claude Desktop and terminal applications, enabling seamless command execution with intelligent output retrieval and comprehensive v3.0 features.
 
-> **🔧 Recent Hotfix**: Config files now use generic paths instead of hardcoded examples. Please update the `command` path in your configuration to match your local installation directory.
-
 ## 🚀 What's New in v3.0
 
 - **Enhanced Auto-Retrieve**: Progressive delays with smart command detection
