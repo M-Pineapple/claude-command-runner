@@ -215,7 +215,8 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 // Use V2 without background monitoring to prevent crashes
                 return try await handleExecuteCommandV2NoMonitoring(params: params, logger: logger, config: config)
             case "execute_with_auto_retrieve":
-                return try await handleExecuteWithAutoRetrieve(params: params, logger: logger, config: config)
+                // Use stable auto-retrieve to prevent crashes
+                return try await handleExecuteWithAutoRetrieveStable(params: params, logger: logger, config: config)
             case "preview_command":
                 return await handlePreviewCommand(params: params, logger: logger)
             case "get_command_output":
