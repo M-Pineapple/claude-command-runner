@@ -3,21 +3,17 @@ import MCP
 import Logging
 
 // Execute command with automatic output retrieval
-func handleExecuteWithAutoRetrieve(params: CallTool.Parameters, logger: Logger) async throws -> CallTool.Result {
+func handleExecuteWithAutoRetrieve(params: CallTool.Parameters, logger: Logger, config: Configuration) async throws -> CallTool.Result {
     guard let arguments = params.arguments,
           let command = arguments["command"],
           case .string(let commandString) = command else {
         throw MCPError.invalidParams("Missing or invalid 'command' parameter")
     }
     
-    var workingDirectory: String?
-    if let dir = arguments["working_directory"],
-       case .string(let dirString) = dir {
-        workingDirectory = dirString
-    }
+    // Working directory is not needed for auto-retrieve since it's handled in the execute call
     
-    // First, execute the command normally
-    let executeResult = try await handleExecuteCommandV2(params: params, logger: logger)
+    // First, execute the command using the stable version without background monitoring
+    let executeResult = try await handleExecuteCommandV2NoMonitoring(params: params, logger: logger, config: config)
     
     // Extract command ID from the result text
     var resultText = ""
@@ -41,7 +37,7 @@ func handleExecuteWithAutoRetrieve(params: CallTool.Parameters, logger: Logger) 
                 arguments: ["command_id": .string(commandId)]
             )
             
-            let outputResult = try await handleGetCommandOutput(params: outputParams, logger: logger)
+            let outputResult = await handleGetCommandOutput(params: outputParams, logger: logger)
             
             // Check if we got actual output (not the "not found" message)
             if case .text(let outputText) = outputResult.content.first,
