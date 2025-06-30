@@ -318,8 +318,8 @@ public class DatabaseManager {
                 return false
             }
             
-            sqlite3_bind_text(statement, 1, stdout, -1, nil)
-            sqlite3_bind_text(statement, 2, stderr, -1, nil)
+            sqlite3_bind_text(statement, 1, stdout, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, stderr, -1, SQLITE_TRANSIENT)
             
             if let exitCode = exitCode {
                 sqlite3_bind_int(statement, 3, Int32(exitCode))
@@ -335,7 +335,7 @@ public class DatabaseManager {
                 sqlite3_bind_null(statement, 5)
             }
             
-            sqlite3_bind_text(statement, 6, commandId, -1, nil)
+            sqlite3_bind_text(statement, 6, commandId, -1, SQLITE_TRANSIENT)
             
             return sqlite3_step(statement) == SQLITE_DONE
         }
@@ -351,7 +351,7 @@ public class DatabaseManager {
                 return nil
             }
             
-            sqlite3_bind_text(statement, 1, commandId, -1, nil)
+            sqlite3_bind_text(statement, 1, commandId, -1, SQLITE_TRANSIENT)
             
             guard sqlite3_step(statement) == SQLITE_ROW else {
                 return nil
@@ -456,9 +456,9 @@ public class DatabaseManager {
             }
             
             let searchPattern = "%\(query)%"
-            sqlite3_bind_text(statement, 1, searchPattern, -1, nil)
-            sqlite3_bind_text(statement, 2, searchPattern, -1, nil)
-            sqlite3_bind_text(statement, 3, searchPattern, -1, nil)
+            sqlite3_bind_text(statement, 1, searchPattern, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, searchPattern, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 3, searchPattern, -1, SQLITE_TRANSIENT)
             sqlite3_bind_int(statement, 4, Int32(limit))
             
             var commands: [CommandRecord] = []
@@ -495,10 +495,10 @@ extension DatabaseManager {
                 return nil
             }
             
-            sqlite3_bind_text(statement, 1, id, -1, nil)
-            sqlite3_bind_text(statement, 2, name, -1, nil)
-            sqlite3_bind_text(statement, 3, path, -1, nil)
-            sqlite3_bind_text(statement, 4, gitRemote, -1, nil)
+            sqlite3_bind_text(statement, 1, id, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, name, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 3, path, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 4, gitRemote, -1, SQLITE_TRANSIENT)
             
             guard sqlite3_step(statement) == SQLITE_DONE else {
                 print("Failed to insert project: \(String(cString: sqlite3_errmsg(db)))")
@@ -520,7 +520,7 @@ extension DatabaseManager {
                 return nil
             }
             
-            sqlite3_bind_text(statement, 1, path, -1, nil)
+            sqlite3_bind_text(statement, 1, path, -1, SQLITE_TRANSIENT)
             
             guard sqlite3_step(statement) == SQLITE_ROW else {
                 return nil
@@ -552,7 +552,7 @@ extension DatabaseManager {
                 return nil
             }
             
-            sqlite3_bind_text(statement, 1, directory, -1, nil)
+            sqlite3_bind_text(statement, 1, directory, -1, SQLITE_TRANSIENT)
             
             guard sqlite3_step(statement) == SQLITE_ROW else {
                 return nil
@@ -611,7 +611,7 @@ extension DatabaseManager {
             }
             
             if let category = category {
-                sqlite3_bind_text(statement, 1, category, -1, nil)
+                sqlite3_bind_text(statement, 1, category, -1, SQLITE_TRANSIENT)
             }
             
             var templates: [Template] = []
@@ -671,12 +671,12 @@ extension DatabaseManager {
                 return
             }
             
-            sqlite3_bind_text(statement, 1, eventType, -1, nil)
+            sqlite3_bind_text(statement, 1, eventType, -1, SQLITE_TRANSIENT)
             
             if let data = data,
                let jsonData = try? JSONSerialization.data(withJSONObject: data),
                let jsonString = String(data: jsonData, encoding: .utf8) {
-                sqlite3_bind_text(statement, 2, jsonString, -1, nil)
+                sqlite3_bind_text(statement, 2, jsonString, -1, SQLITE_TRANSIENT)
             } else {
                 sqlite3_bind_null(statement, 2)
             }
