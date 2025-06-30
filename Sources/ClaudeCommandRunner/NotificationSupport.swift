@@ -131,7 +131,7 @@ extension ClaudeCommandRunner {
             await commandResultsStore.store(result)
             
             // Create notification parameters
-            let params = CommandOutputNotification.Parameters(
+            let _ = CommandOutputNotification.Parameters(
                 commandId: result.commandId,
                 command: result.command,
                 output: result.output,

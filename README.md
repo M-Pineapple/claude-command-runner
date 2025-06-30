@@ -210,12 +210,14 @@ If Claude Command Runner has helped enhance your development workflow or saved y
 <a href="https://www.buymeacoffee.com/mpineapple" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 Your support helps me:
-- Maintain and improve Claude Command Runner with new features
-- Keep the project open-source and free for everyone
-- Dedicate more time to addressing user requests and bug fixes
-- Explore new terminal integrations and command intelligence
+* Maintain and improve Claude Command Runner with new features
+* Keep the project open-source and free for everyone
+* Dedicate more time to addressing user requests and bug fixes
+* Explore new terminal integrations and command intelligence
 
 Thank you for considering supporting my work! 🙏
+
+
 
 ## License
 
