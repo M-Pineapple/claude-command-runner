@@ -12,11 +12,11 @@ public class DatabaseManager {
     
     private init() {
         // Default database location
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dbDirectory = appSupport.appendingPathComponent("ClaudeCommandRunner")
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
+        let dbDirectory = homeDir.appendingPathComponent(".claude-command-runner")
         try? FileManager.default.createDirectory(at: dbDirectory, withIntermediateDirectories: true)
         
-        self.dbPath = dbDirectory.appendingPathComponent("commands.db").path
+        self.dbPath = dbDirectory.appendingPathComponent("claude_commands.db").path
         setupDatabase()
     }
     
@@ -34,17 +34,23 @@ public class DatabaseManager {
     // MARK: - Setup
     
     private func setupDatabase() {
+        print("[DatabaseManager] Setting up database at: \(dbPath)")
+        
         // Open database
         if sqlite3_open(dbPath, &db) != SQLITE_OK {
-            print("Error opening database: \(String(cString: sqlite3_errmsg(db)))")
+            print("[DatabaseManager] Error opening database: \(String(cString: sqlite3_errmsg(db)))")
             return
         }
+        
+        print("[DatabaseManager] Database opened successfully")
         
         // Enable foreign keys
         execute("PRAGMA foreign_keys = ON")
         
         // Create tables
         createTables()
+        
+        print("[DatabaseManager] Database setup complete")
     }
     
     private func createTables() {

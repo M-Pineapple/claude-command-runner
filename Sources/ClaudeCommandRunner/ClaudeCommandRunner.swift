@@ -3,6 +3,7 @@ import ArgumentParser
 import MCP
 import Logging
 import ServiceLifecycle
+import NIOCore
 
 // Command execution result structure
 struct CommandExecutionResult: Codable {
@@ -97,7 +98,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         
         // Override with command line arguments if provided
         let actualPort = port != 9876 ? port : config.port
-        let actualLogLevel = logLevel != "info" ? logLevel : config.logging.level
+        let _ = logLevel != "info" ? logLevel : config.logging.level
         
         if verbose {
             logger.info("Starting Claude Command Runner MCP Server v2.0...")
@@ -114,6 +115,10 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 tools: .init(listChanged: false)
             )
         )
+        
+        // Add missing MCP protocol handlers
+        await Self.setupResourceHandlers(server: server, logger: logger)
+        await Self.setupPromptHandlers(server: server, logger: logger)
         
         // Add tool handlers
         await server.withMethodHandler(ListTools.self) { _ in
@@ -211,9 +216,9 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
             case "execute_with_auto_retrieve":
                 return try await handleExecuteWithAutoRetrieve(params: params, logger: logger, config: config)
             case "preview_command":
-                return try await handlePreviewCommand(params: params, logger: logger)
+                return await handlePreviewCommand(params: params, logger: logger)
             case "get_command_output":
-                return try await handleGetCommandOutput(params: params, logger: logger)
+                return await handleGetCommandOutput(params: params, logger: logger)
             default:
                 return CallTool.Result(
                     content: [.text("Unknown tool: \(params.name)")],
@@ -239,8 +244,23 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         logger.info("MCP Server started successfully")
         logger.info("Command receiver listening on port \(actualPort)")
         
-        // Run the service group
-        try await serviceGroup.run()
+        // Add error handling for port conflicts
+        do {
+            // Run the service group
+            try await serviceGroup.run()
+        } catch {
+            logger.error("Service group error: \(error)")
+            
+            // Check if it's a port binding error
+            if let error = error as? NIOCore.IOError, error.errnoCode == EADDRINUSE {
+                logger.error("Port \(actualPort) is already in use. Please stop any existing instances or use a different port.")
+                print("\n❌ Error: Port \(actualPort) is already in use.")
+                print("Try: lsof -i :\(actualPort) to find the process using this port")
+                Foundation.exit(1)
+            }
+            
+            throw error
+        }
     }
     
     private static func parseLogLevel(_ level: String) -> Logger.Level {
@@ -257,7 +277,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
 // Import the enhanced suggest command handler
 // The basic implementation is replaced by CommandSuggestionEngine.swift
 
-func handlePreviewCommand(params: CallTool.Parameters, logger: Logger) async throws -> CallTool.Result {
+func handlePreviewCommand(params: CallTool.Parameters, logger: Logger) async -> CallTool.Result {
     guard let arguments = params.arguments,
           let command = arguments["command"],
           case .string(let commandString) = command else {
@@ -282,7 +302,7 @@ func handlePreviewCommand(params: CallTool.Parameters, logger: Logger) async thr
 }
 
 // New tool handler to retrieve command output
-func handleGetCommandOutput(params: CallTool.Parameters, logger: Logger) async throws -> CallTool.Result {
+func handleGetCommandOutput(params: CallTool.Parameters, logger: Logger) async -> CallTool.Result {
     var commandId = "last" // Default to last command
     
     if let arguments = params.arguments,
@@ -405,64 +425,7 @@ func createOutputCaptureScript(command: String, commandId: String) -> String {
     """
 }
 
-/// Create AppleScript for different terminal types
-private func createAppleScript(for terminal: TerminalConfig.TerminalType, command: String) -> String {
-    switch terminal {
-    case .warp, .warpPreview:
-        return """
-        tell application "\(terminal.rawValue)" to activate
-        delay 0.5
-        tell application "System Events"
-            keystroke "\(command)"
-        end tell
-        """
-        
-    case .iterm2:
-        return """
-        tell application "iTerm"
-            activate
-            
-            -- Get current terminal window or create new one
-            if (count of windows) = 0 then
-                create window with default profile
-            end if
-            
-            tell current window
-                tell current session
-                    write text "\(command)"
-                end tell
-            end tell
-        end tell
-        """
-        
-    case .terminal:
-        return """
-        tell application "Terminal"
-            activate
-            
-            -- Check if Terminal has windows
-            if (count of windows) = 0 then
-                do script "\(command)"
-            else
-                -- Use the frontmost window
-                tell front window
-                    do script "\(command)" in selected tab
-                end tell
-            end if
-        end tell
-        """
-        
-    case .alacritty:
-        // Alacritty doesn't have AppleScript support, use keyboard events
-        return """
-        tell application "Alacritty" to activate
-        delay 0.5
-        tell application "System Events"
-            keystroke "\(command)"
-        end tell
-        """
-    }
-}
+// createAppleScript is now in CommandHandlers.swift
 
 // Function to wait for and retrieve command output
 func waitForCommandOutput(commandId: String, timeout: TimeInterval = 30, logger: Logger) async throws -> CommandExecutionResult? {

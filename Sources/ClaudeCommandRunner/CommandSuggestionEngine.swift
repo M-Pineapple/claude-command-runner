@@ -293,7 +293,10 @@ func handleSuggestCommand(params: CallTool.Parameters, logger: Logger) async thr
     var response = "🎯 Command Suggestions for: \(queryString)\n\n"
     
     for (index, suggestion) in suggestions.enumerated() {
-        response += "\(index + 1). **\(suggestion.command)**\n"
+        // Skip empty commands
+        guard !suggestion.command.isEmpty else { continue }
+        
+        response += "\(index + 1). `\(suggestion.command)`\n"
         response += "   \(suggestion.description)\n"
         response += "   Confidence: \(Int(suggestion.confidence * 100))%"
         
