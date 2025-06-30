@@ -375,58 +375,7 @@ func handleGetCommandOutput(params: CallTool.Parameters, logger: Logger) async -
     }
 }
 
-// Helper functions for output capture
-func createOutputCaptureScript(command: String, commandId: String) -> String {
-    let outputFile = "/tmp/claude_output_\(commandId).json"
-    
-    return """
-    #!/bin/bash
-    
-    # Command to execute
-    COMMAND='\(command.replacingOccurrences(of: "'", with: "'\"'\"'"))'
-    
-    # Create a temporary file for stderr
-    STDERR_FILE="/tmp/claude_stderr_\(commandId).tmp"
-    
-    # Execute command and capture output
-    OUTPUT=$(eval "$COMMAND" 2>"$STDERR_FILE")
-    EXIT_CODE=$?
-    
-    # Read stderr
-    STDERR=$(<"$STDERR_FILE")
-    rm -f "$STDERR_FILE"
-    
-    # Escape JSON strings
-    escape_json() {
-        python3 -c "import sys, json; print(json.dumps(sys.stdin.read()))" | sed 's/^"//;s/"$//'
-    }
-    
-    # Create JSON result
-    cat > "\(outputFile)" << EOF
-    {
-        "commandId": "\(commandId)",
-        "command": "$(echo "$COMMAND" | escape_json)",
-        "output": "$(echo "$OUTPUT" | escape_json)",
-        "error": "$(echo "$STDERR" | escape_json)",
-        "exitCode": $EXIT_CODE,
-        "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    }
-    EOF
-    
-    # Signal completion by creating a marker file
-    touch "\(outputFile).complete"
-    
-    # Also echo the output for immediate viewing in terminal
-    echo "$OUTPUT"
-    if [ -n "$STDERR" ]; then
-        echo "$STDERR" >&2
-    fi
-    
-    exit $EXIT_CODE
-    """
-}
-
-// createAppleScript is now in CommandHandlers.swift
+// createOutputCaptureScript and createAppleScript are now in TerminalUtilities.swift
 
 // Function to wait for and retrieve command output
 func waitForCommandOutput(commandId: String, timeout: TimeInterval = 30, logger: Logger) async throws -> CommandExecutionResult? {
