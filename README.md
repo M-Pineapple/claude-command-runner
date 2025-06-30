@@ -64,7 +64,7 @@ For the best experience, we recommend [Warp Terminal](https://app.warp.dev/refer
 
 1. Clone and build:
 ```bash
-git clone https://github.com/yourusername/claude-command-runner.git
+git clone https://github.com/M-Pineapple/claude-command-runner.git
 cd claude-command-runner
 ./build.sh
 ```
