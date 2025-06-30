@@ -2,6 +2,9 @@ import Foundation
 import SQLite3
 import Logging
 
+// SQLite constants
+fileprivate let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
 /// SQLite database manager for Claude Command Runner
 public class DatabaseManager {
     internal var db: OpaquePointer?
@@ -247,10 +250,10 @@ public class DatabaseManager {
                 return false
             }
             
-            // Bind parameters
-            sqlite3_bind_text(statement, 1, command.id, -1, nil)
-            sqlite3_bind_text(statement, 2, command.command, -1, nil)
-            sqlite3_bind_text(statement, 3, command.directory, -1, nil)
+            // Bind parameters with proper memory management
+            sqlite3_bind_text(statement, 1, command.id, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, command.command, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 3, command.directory, -1, SQLITE_TRANSIENT)
             
             if let exitCode = command.exitCode {
                 sqlite3_bind_int(statement, 4, Int32(exitCode))
@@ -258,8 +261,8 @@ public class DatabaseManager {
                 sqlite3_bind_null(statement, 4)
             }
             
-            sqlite3_bind_text(statement, 5, command.stdout, -1, nil)
-            sqlite3_bind_text(statement, 6, command.stderr, -1, nil)
+            sqlite3_bind_text(statement, 5, command.stdout, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 6, command.stderr, -1, SQLITE_TRANSIENT)
             sqlite3_bind_double(statement, 7, command.startedAt.timeIntervalSince1970)
             
             if let completedAt = command.completedAt {
@@ -274,14 +277,14 @@ public class DatabaseManager {
                 sqlite3_bind_null(statement, 9)
             }
             
-            sqlite3_bind_text(statement, 10, command.terminalType, -1, nil)
-            sqlite3_bind_text(statement, 11, command.projectId, -1, nil)
-            sqlite3_bind_text(statement, 12, command.tags?.joined(separator: ","), -1, nil)
+            sqlite3_bind_text(statement, 10, command.terminalType, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 11, command.projectId, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 12, command.tags?.joined(separator: ","), -1, SQLITE_TRANSIENT)
             
             if let metadata = command.metadata,
                let jsonData = try? JSONSerialization.data(withJSONObject: metadata),
                let jsonString = String(data: jsonData, encoding: .utf8) {
-                sqlite3_bind_text(statement, 13, jsonString, -1, nil)
+                sqlite3_bind_text(statement, 13, jsonString, -1, SQLITE_TRANSIENT)
             } else {
                 sqlite3_bind_null(statement, 13)
             }
