@@ -1,7 +1,7 @@
 # Claude Command Runner
 
 <div align="center">
-  <img src="logo.png" alt="Claude Command Runner Logo" width="200">
+  <img src="https://github.com/user-attachments/assets/13d56902-b9d7-4368-b44f-2cefa15bf746">
 </div>
 
 A powerful Model Context Protocol (MCP) server that bridges Claude Desktop and terminal applications, enabling seamless command execution with intelligent output retrieval and comprehensive v3.0 features.
@@ -64,7 +64,7 @@ For the best experience, we recommend [Warp Terminal](https://app.warp.dev/refer
 
 1. Clone and build:
 ```bash
-git clone https://github.com/yourusername/claude-command-runner.git
+git clone https://github.com/M-Pineapple/claude-command-runner.git
 cd claude-command-runner
 ./build.sh
 ```
@@ -154,7 +154,7 @@ The configuration file is located at `~/.claude-command-runner/config.json`:
 - Automatic output capture without polling
 - Integrated command history
 - Modern async architecture
-- Plus, it's free and helps support the project through their referral program
+
 
 ## 🛠️ Troubleshooting
 
@@ -254,6 +254,6 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ---
 
-**Built with ❤️ by Rogers and Claude**
+**Built with ❤️ by 🍍**
 
 *If you find this project helpful, give it a ⭐ and try [Warp Terminal](https://app.warp.dev/referral/G9W3EY)!*
