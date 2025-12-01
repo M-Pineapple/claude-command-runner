@@ -115,7 +115,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         // Create the MCP server
         let server = Server(
             name: "Claude Command Runner",
-            version: "2.0.0",
+            version: "4.0.0",
             capabilities: .init(
                 tools: .init(listChanged: false)
             )
@@ -206,6 +206,100 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                         ]),
                         "required": .array([])
                     ])
+                ),
+                // NEW v4.0 TOOLS
+                Tool(
+                    name: "execute_pipeline",
+                    description: "Execute a pipeline of commands with conditional logic (stop/continue/warn on failure)",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "steps": .object([
+                                "type": .string("array"),
+                                "description": .string("Array of step objects with 'command', 'on_fail' (stop/continue/warn), optional 'name' and 'working_directory'")
+                            ])
+                        ]),
+                        "required": .array([.string("steps")])
+                    ])
+                ),
+                Tool(
+                    name: "execute_with_streaming",
+                    description: "Execute a command with real-time output streaming - ideal for long-running builds",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "command": .object([
+                                "type": .string("string"),
+                                "description": .string("The command to execute")
+                            ]),
+                            "working_directory": .object([
+                                "type": .string("string"),
+                                "description": .string("Optional working directory")
+                            ]),
+                            "update_interval": .object([
+                                "type": .string("integer"),
+                                "description": .string("Seconds between output updates (default: 2)")
+                            ]),
+                            "max_duration": .object([
+                                "type": .string("integer"),
+                                "description": .string("Maximum execution time in seconds (default: 120)")
+                            ])
+                        ]),
+                        "required": .array([.string("command")])
+                    ])
+                ),
+                Tool(
+                    name: "save_template",
+                    description: "Save a command template with variables for reuse",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Unique name for the template")
+                            ]),
+                            "template": .object([
+                                "type": .string("string"),
+                                "description": .string("Command template with {{variable}} placeholders")
+                            ]),
+                            "description": .object([
+                                "type": .string("string"),
+                                "description": .string("Optional description of what the template does")
+                            ]),
+                            "category": .object([
+                                "type": .string("string"),
+                                "description": .string("Optional category for organization")
+                            ])
+                        ]),
+                        "required": .array([.string("name"), .string("template")])
+                    ])
+                ),
+                Tool(
+                    name: "run_template",
+                    description: "Execute a saved command template with variable substitution",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of the template to run")
+                            ]),
+                            "variables": .object([
+                                "type": .string("object"),
+                                "description": .string("Object with variable names and their values")
+                            ])
+                        ]),
+                        "required": .array([.string("name")])
+                    ])
+                ),
+                Tool(
+                    name: "list_templates",
+                    description: "List all saved command templates",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([:]),
+                        "required": .array([])
+                    ])
                 )
             ])
         }
@@ -226,6 +320,17 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 return await handlePreviewCommand(params: params, logger: logger)
             case "get_command_output":
                 return await handleGetCommandOutput(params: params, logger: logger)
+            // NEW v4.0 TOOL HANDLERS
+            case "execute_pipeline":
+                return try await handleExecutePipeline(params: params, logger: logger, config: config)
+            case "execute_with_streaming":
+                return try await handleExecuteWithStreaming(params: params, logger: logger, config: config)
+            case "save_template":
+                return await handleSaveTemplate(params: params, logger: logger)
+            case "run_template":
+                return try await handleRunTemplate(params: params, logger: logger, config: config)
+            case "list_templates":
+                return await handleListTemplates(params: params, logger: logger)
             default:
                 return CallTool.Result(
                     content: [.text("Unknown tool: \(params.name)")],

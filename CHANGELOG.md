@@ -5,6 +5,38 @@ All notable changes to Claude Command Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2025-12-01
+
+### Added
+- **Command Pipelines** (`execute_pipeline`): Chain multiple commands with conditional logic
+  - `on_fail: stop` - Stop pipeline on failure (default)
+  - `on_fail: continue` - Continue to next step regardless of failure
+  - `on_fail: warn` - Log warning but continue
+  - Named steps for clear output
+  - Detailed execution summary with timing
+
+- **Output Streaming** (`execute_with_streaming`): Real-time output for long-running commands
+  - Configurable update interval (default: 2 seconds)
+  - Maximum duration limit (default: 120 seconds)
+  - Progressive output display
+  - Ideal for builds that previously appeared to "hang"
+
+- **Command Templates**: Save and reuse command patterns
+  - `save_template` - Store templates with `{{variable}}` placeholders
+  - `run_template` - Execute templates with variable substitution
+  - `list_templates` - View all saved templates
+  - Category organization
+  - Templates stored in `~/.claude-command-runner/templates.json`
+
+### Changed
+- Version bumped to 4.0.0
+- Moved disabled WarpCode integration out of Sources to fix build
+
+### Technical
+- New file: `PipelineAndStreaming.swift` containing all v4.0 features
+- Fixed MCP Value type handling (uses string parsing for integers)
+- Maintained backward compatibility with all v3.0 tools
+
 ## [3.0.1] - 2025-06-30
 
 ### Fixed

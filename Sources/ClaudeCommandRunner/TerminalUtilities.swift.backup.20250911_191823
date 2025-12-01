@@ -8,11 +8,9 @@ func createAppleScript(for terminal: TerminalConfig.TerminalType, command: Strin
     case .warp, .warpPreview:
         return """
         tell application "\(terminal.rawValue)" to activate
-        delay 1.0
+        delay 0.5
         tell application "System Events"
             keystroke "\(command)"
-            delay 0.2
-            keystroke return
         end tell
         """
         
@@ -55,11 +53,9 @@ func createAppleScript(for terminal: TerminalConfig.TerminalType, command: Strin
         // Alacritty doesn't have AppleScript support, use keyboard events
         return """
         tell application "Alacritty" to activate
-        delay 1.0
+        delay 0.5
         tell application "System Events"
             keystroke "\(command)"
-            delay 0.2
-            keystroke return
         end tell
         """
     }
