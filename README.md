@@ -4,40 +4,94 @@
   <img src="https://github.com/user-attachments/assets/13d56902-b9d7-4368-b44f-2cefa15bf746">
 </div>
 
-A powerful Model Context Protocol (MCP) server that bridges Claude Desktop and terminal applications, enabling seamless command execution with intelligent output retrieval and comprehensive v3.0 features.
+A powerful Model Context Protocol (MCP) server that bridges Claude Desktop and terminal applications, enabling seamless command execution with intelligent output retrieval, command pipelines, real-time streaming, and reusable templates.
 
-## 🚀 What's New in v3.0
+## 🚀 What's New in v4.0
 
-- **Enhanced Auto-Retrieve**: Progressive delays with smart command detection
-- **Rock-Solid Stability**: Fixed server crashes, runs persistently
-- **Database Integration**: SQLite command history and analytics
-- **Configuration System**: Customizable security and behavior settings
-- **Build Intelligence**: Automatically waits longer for compilation commands
+- **Command Pipelines**: Chain multiple commands with conditional logic (stop/continue/warn on failure)
+- **Output Streaming**: Real-time output for long-running builds – no more hanging or timeouts
+- **Command Templates**: Save reusable command patterns with `{{variable}}` placeholders
+- **Enhanced Workflow**: Perfect for complex build processes, CI/CD-style workflows, and repetitive tasks
+
+### v3.0 Foundation (Included)
+- Enhanced Auto-Retrieve with progressive delays and smart command detection
+- Rock-solid stability with persistent server operation
+- SQLite database for command history and analytics
+- Configurable security and behavior settings
 
 ## Overview
 
-Claude Command Runner revolutionizes the development workflow by allowing Claude to:
+Claude Command Runner revolutionises the development workflow by allowing Claude to:
 - Execute terminal commands directly from conversations
+- Chain commands with conditional logic using pipelines
+- Stream output in real-time for long builds
+- Save and reuse command templates with variables
 - Automatically capture output with intelligent timing
 - Track command history and patterns
-- Maintain security with configurable policies
 
 ## 🎯 Key Features
 
+### Command Pipelines
+Chain multiple commands with intelligent failure handling:
+
+```json
+{
+  "steps": [
+    {"name": "Build", "command": "swift build", "on_fail": "stop"},
+    {"name": "Test", "command": "swift test", "on_fail": "continue"},
+    {"name": "Package", "command": "swift build -c release", "on_fail": "stop"}
+  ]
+}
+```
+
+**Failure modes:**
+- `stop` – Halt pipeline on failure
+- `continue` – Log error and proceed to next step
+- `warn` – Show warning and continue
+
+### Output Streaming
+Real-time output for long-running commands:
+
+```json
+{
+  "command": "swift build -c release",
+  "update_interval": 3,
+  "max_duration": 180
+}
+```
+
+Perfect for:
+- Long compilation processes
+- Test suites
+- Any command that previously "hung" waiting for output
+
+### Command Templates
+Save reusable patterns with variable substitution:
+
+```json
+// Save a template
+{
+  "name": "swift-release",
+  "template": "cd {{project}} && swift build -c release",
+  "category": "Swift Development",
+  "description": "Build Swift project in release mode"
+}
+
+// Run with variables
+{
+  "name": "swift-release",
+  "variables": {"project": "~/GitHub/MyApp"}
+}
+```
+
+Templates are stored in `~/.claude-command-runner/templates.json` and persist across sessions.
+
 ### Smart Auto-Retrieve
-The `execute_with_auto_retrieve` command now intelligently detects command types and adjusts wait times:
+The `execute_with_auto_retrieve` command intelligently detects command types and adjusts wait times:
 - **Quick commands** (echo, pwd): 2-6 seconds
 - **Moderate commands** (git, npm): up to 20 seconds  
 - **Build commands** (swift build, make): up to 77 seconds
 - **Test commands**: up to 40 seconds
-
-### Complete Feature Set
-- ✅ Two-way communication with automatic output capture
-- ✅ Progressive delay system for all command types
-- ✅ SQLite database for command history
-- ✅ Configurable security policies
-- ✅ Multi-terminal support (Warp recommended)
-- ✅ Command suggestions based on history
 
 ## 📊 Why Warp Terminal?
 
@@ -50,7 +104,7 @@ For the best experience, we recommend [Warp Terminal](https://app.warp.dev/refer
 | AI-Powered Features | ✅ | ❌ | ❌ |
 | Modern UI/UX | ✅ | ⚠️ | ⚠️ |
 
-> 💡 **Get Warp Free**: [Download Warp Terminal](https://app.warp.dev/referral/G9W3EY) - It's free and makes Claude Command Runner significantly more powerful!
+> 💡 **Get Warp Free**: [Download Warp Terminal](https://app.warp.dev/referral/G9W3EY) – It's free and makes Claude Command Runner significantly more powerful!
 
 ## Installation
 
@@ -86,19 +140,50 @@ cd claude-command-runner
 
 ### Available Tools
 
-1. **execute_command** - Execute with manual output retrieval
-2. **execute_with_auto_retrieve** - Execute with intelligent auto-retrieval ⭐
-3. **get_command_output** - Manually retrieve command output
-4. **preview_command** - Preview without executing
-5. **suggest_command** - Get command suggestions
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `execute_command` | Execute with manual output retrieval | Simple commands |
+| `execute_with_auto_retrieve` | Execute with intelligent auto-retrieval | Most common usage ⭐ |
+| `execute_pipeline` | Chain commands with conditional logic | Build workflows, CI/CD |
+| `execute_with_streaming` | Real-time output streaming | Long builds, test suites |
+| `save_template` | Save reusable command pattern | Create shortcuts |
+| `run_template` | Execute saved template with variables | Run saved patterns |
+| `list_templates` | View all saved templates | Manage templates |
+| `get_command_output` | Manually retrieve command output | Debugging |
+| `preview_command` | Preview without executing | Safety check |
+| `suggest_command` | Get command suggestions | Discovery |
 
-### Example Workflow
+### Example Workflows
 
+**Simple Command:**
 ```
-You: "Build my Swift project"
-Claude: [Executes: swift build]
-[Waits intelligently up to 77 seconds]
-Claude: "Build completed successfully! Here's the output..."
+You: "Check my Swift version"
+Claude: [execute_with_auto_retrieve: swift --version]
+Claude: "You're running Swift 6.0.2"
+```
+
+**Build Pipeline:**
+```
+You: "Build, test, and package my app"
+Claude: [execute_pipeline with build → test → package steps]
+Claude: "Pipeline complete! Build: ✅ Test: ✅ Package: ✅"
+```
+
+**Streaming Long Build:**
+```
+You: "Build this large project"
+Claude: [execute_with_streaming: swift build -c release]
+Claude: "Building... [live updates every 3 seconds]"
+Claude: "Build completed in 45 seconds!"
+```
+
+**Using Templates:**
+```
+You: "Save a template for deploying to staging"
+Claude: [save_template: name="deploy-staging", template="cd {{project}} && ./deploy.sh staging"]
+
+You: "Deploy MyApp to staging"
+Claude: [run_template: name="deploy-staging", variables={project: "MyApp"}]
 ```
 
 ## Configuration
@@ -122,10 +207,42 @@ The configuration file is located at `~/.claude-command-runner/config.json`:
 }
 ```
 
+Templates are stored separately at `~/.claude-command-runner/templates.json`.
+
 ## 🤔 Frequently Asked Questions
 
-### Q: Why does the server crash sometimes?
-**A:** This was a major issue in earlier versions. v3.0 completely fixes server stability by removing problematic background tasks and implementing a safer progressive delay system.
+### Q: What's new in v4.0?
+**A:** Three major features:
+1. **Pipelines** – Chain commands with stop/continue/warn logic
+2. **Streaming** – Real-time output for long builds (no more hanging!)
+3. **Templates** – Save and reuse command patterns with variables
+
+### Q: When should I use pipelines vs regular commands?
+**A:** Use pipelines when you need:
+- Multiple sequential commands
+- Conditional logic (stop on build failure, continue on test failure)
+- A summary of all steps with timing
+- CI/CD-style workflows
+
+### Q: Why does my command "hang" with execute_with_auto_retrieve?
+**A:** For very long commands, use `execute_with_streaming` instead. It provides real-time output updates and handles commands that run for minutes. This was the main motivation for adding streaming in v4.0.
+
+### Q: How do I use templates with multiple variables?
+**A:** Define variables in your template with `{{variable_name}}` syntax:
+```json
+{
+  "template": "cd {{project}} && git checkout {{branch}} && swift build -c {{config}}"
+}
+```
+Then provide all variables when running:
+```json
+{
+  "variables": {"project": "~/MyApp", "branch": "main", "config": "release"}
+}
+```
+
+### Q: Where are my templates stored?
+**A:** In `~/.claude-command-runner/templates.json`. They persist across sessions and Claude Desktop restarts.
 
 ### Q: How long will auto-retrieve wait for my command?
 **A:** It depends on the command type:
@@ -134,27 +251,25 @@ The configuration file is located at `~/.claude-command-runner/config.json`:
 - Build commands: 77 seconds
 - Unknown commands: 30 seconds
 
+For longer commands, use `execute_with_streaming` instead.
+
 ### Q: Can I use this with Terminal.app or iTerm2?
 **A:** Yes, basic command execution works with any terminal. However, automatic output capture and advanced features require Warp Terminal. [Get Warp free here](https://app.warp.dev/referral/G9W3EY).
 
 ### Q: Is it secure to let Claude run commands?
 **A:** Yes! Every command requires manual approval (pressing Enter), and you can configure blocked commands and patterns in the config file. Claude cannot execute anything without your explicit consent.
 
-### Q: What happens if my build takes longer than 77 seconds?
-**A:** The auto-retrieve will timeout and provide the command ID. You can then use `get_command_output` with that ID to retrieve the results when ready.
+### Q: What happens if a pipeline step fails?
+**A:** Depends on the `on_fail` setting:
+- `stop` – Pipeline halts immediately, remaining steps are skipped
+- `continue` – Error is logged, pipeline continues to next step
+- `warn` – Warning is shown, pipeline continues
+
+### Q: Can I nest pipelines or run templates inside pipelines?
+**A:** Not directly in v4.0, but you can create templates that contain multiple commands separated by `&&` or `;`.
 
 ### Q: Where is my command history stored?
 **A:** In an SQLite database at `~/.claude-command-runner/claude_commands.db`. It tracks all commands, outputs, exit codes, and execution times.
-
-### Q: Can I contribute to this project?
-**A:** Absolutely! Fork the repo, make your changes, and submit a PR. Check out our contributing guidelines below.
-
-### Q: Why do you recommend Warp so strongly?
-**A:** Warp provides APIs that enable features impossible with other terminals:
-- Automatic output capture without polling
-- Integrated command history
-- Modern async architecture
-
 
 ## 🛠️ Troubleshooting
 
@@ -168,12 +283,27 @@ The configuration file is located at `~/.claude-command-runner/config.json`:
 2. Check Claude Desktop logs for errors
 3. Verify your MCP configuration path
 
+### Streaming Not Updating
+1. Check that the command is actually running (not waiting for input)
+2. Increase `update_interval` if updates are too frequent
+3. Check `/tmp/claude_stream_*.log` for output files
+
+### Pipeline Steps Skipped Unexpectedly
+1. Check the `on_fail` setting – `stop` will skip remaining steps
+2. Verify each command works individually first
+3. Check exit codes in the pipeline summary
+
+### Templates Not Saving
+1. Ensure `~/.claude-command-runner/` directory exists
+2. Check write permissions on templates.json
+3. Verify JSON syntax in template definition
+
 ### Auto-Retrieve Not Working
 1. Ensure you're using `execute_with_auto_retrieve` (not `execute_command`)
 2. Check if command output file exists: `ls /tmp/claude_output_*.json`
-3. For long commands, wait for timeout message then use manual retrieval
+3. For long commands, use `execute_with_streaming` instead
 
-### Database Not Logging Commands
+### Database Issues
 If commands execute but aren't saved to the database:
 
 1. **Check database integrity**:
@@ -181,36 +311,22 @@ If commands execute but aren't saved to the database:
    sqlite3 ~/.claude-command-runner/claude_commands.db "PRAGMA integrity_check;"
    ```
    
-2. **If you see errors or "missing from index" messages**, the database is corrupted:
+2. **If corrupted**, backup and remove:
    ```bash
-   # Backup and remove corrupted database
    mv ~/.claude-command-runner/claude_commands.db ~/.claude-command-runner/claude_commands.db.backup
    # Restart Claude Desktop - a new database will be created automatically
    ```
-
-3. **Verify database is working**:
-   ```bash
-   # Check if commands are being logged
-   sqlite3 ~/.claude-command-runner/claude_commands.db "SELECT COUNT(*) FROM commands;"
-   ```
-
-4. **Check for multiple server instances**:
-   ```bash
-   ps aux | grep claude-command-runner | grep -v grep
-   # If you see multiple instances, kill all and restart Claude Desktop
-   ```
-
-The v3.0 release includes automatic corruption detection and recovery, but if issues persist, manually removing the database file will force a clean recreation.
 
 ## Architecture
 
 ```
 ┌─────────────────┐         ┌──────────────────┐         ┌────────────────┐
 │ Claude Desktop  │ ←────→  │ Command Runner   │ ←────→  │ Warp Terminal  │
-│                 │  MCP    │ MCP Server       │ Script  │                │
-│ • Send commands │         │ • Port 9876      │         │ • Execute      │
-│ • Auto-retrieve │         │ • Progress Delay │         │ • Capture      │
-│ • Get output    │         │ • SQLite DB      │         │ • Return       │
+│                 │  MCP    │ MCP Server v4.0  │ Script  │                │
+│ • Pipelines     │         │ • Port 9876      │         │ • Execute      │
+│ • Streaming     │         │ • Templates      │         │ • Capture      │
+│ • Templates     │         │ • SQLite DB      │         │ • Stream       │
+│ • Auto-retrieve │         │ • Progress Delay │         │ • Return       │
 └─────────────────┘         └──────────────────┘         └────────────────┘
 ```
 
@@ -246,11 +362,9 @@ Your support helps me:
 
 Thank you for considering supporting my work! 🙏
 
-
-
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License – see [LICENSE](LICENSE) file for details
 
 ---
 
