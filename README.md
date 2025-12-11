@@ -273,6 +273,43 @@ For longer commands, use `execute_with_streaming` instead.
 
 ## 🛠️ Troubleshooting
 
+### macOS Permission Error: "osascript is not allowed to send keystrokes" (Error 1002)
+
+This error occurs when macOS blocks AppleScript automation. It's common after fresh macOS installs, major updates (like Sequoia), or when the Automation permissions cache becomes corrupted.
+
+**Symptoms:**
+- Error message: `System Events got an error: osascript is not allowed to send keystrokes. (1002)`
+- Toggling permissions off/on in System Settings doesn't help
+- No permission prompt appears when the MCP tries to run
+
+**Solution:**
+
+1. **Reset Automation permissions** (this resets ALL Automation permissions, not just for this app):
+   ```bash
+   tccutil reset AppleEvents
+   ```
+
+2. **Full Mac restart** (not just logout – a complete restart is required)
+
+3. **Open your terminal app first** (Warp, WarpPreview, or whichever you use)
+
+4. **Open Claude Desktop**
+
+5. **Trigger the permission prompt manually** by running this in Terminal:
+   ```bash
+   osascript -e 'tell application "System Events" to keystroke "x"'
+   ```
+
+6. **Grant permission** when macOS prompts you
+
+7. **Try the MCP command again** – it should now work and Claude.app will appear in the Automation list
+
+**Note:** A simple toggle reset or targeted `tccutil` command often doesn't work – the full AppleEvents reset plus restart is usually required.
+
+**Bundle ID Reference:** Claude Desktop uses `com.anthropic.claudefordesktop`
+
+---
+
 ### MCP Not Responding
 1. Check if the server is running: `lsof -i :9876`
 2. Restart Claude Desktop
