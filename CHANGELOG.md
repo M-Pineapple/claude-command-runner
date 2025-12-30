@@ -5,6 +5,17 @@ All notable changes to Claude Command Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.1] - 2025-12-30
+
+### Fixed
+- **Critical: Streaming Exit Code Bug** - Fixed `execute_with_streaming` incorrectly reporting exit code 0 for failed commands
+  - The `$?` was capturing the `while` loop's exit code (always 0) instead of the actual command's exit code
+  - Now uses `set -o pipefail` and `${PIPESTATUS[0]}` to correctly capture the original command's exit status
+  - Credit: Discovered during Warp AI code audit
+
+### Technical
+- Updated bash wrapper script to use `pipefail` and `PIPESTATUS` array for proper pipeline exit code propagation
+
 ## [4.0.0] - 2025-12-01
 
 ### Added
@@ -135,6 +146,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Patch version (0.0.X)**: Bug fixes and minor improvements
 
 ## Upgrade Guide
+
+### From 4.0.0 to 4.0.1
+- No breaking changes - patch fix only
+- Rebuild with `swift build -c release` 
+- Restart Claude Desktop to load updated MCP
 
 ### From 2.1 to 2.2
 1. Update configuration path from Warp Preview to standard Warp
