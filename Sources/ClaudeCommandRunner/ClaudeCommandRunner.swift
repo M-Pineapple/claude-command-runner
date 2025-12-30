@@ -77,6 +77,9 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         _ = DatabaseManager.shared
         logger.info("Database initialization complete")
         
+        // v4.1.0: Perform temp file cleanup on startup
+        performTempCleanup(logger: logger)
+        
         // Handle configuration operations
         if initConfig {
             try ConfigurationManager.initializeWithExample(logger: logger)
@@ -115,7 +118,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         // Create the MCP server
         let server = Server(
             name: "Claude Command Runner",
-            version: "4.0.1",
+            version: "4.1.0",
             capabilities: .init(
                 tools: .init(listChanged: false)
             )
@@ -300,6 +303,38 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                         "properties": .object([:]),
                         "required": .array([])
                     ])
+                ),
+                // NEW v4.1 TOOLS
+                Tool(
+                    name: "list_recent_commands",
+                    description: "List recent commands from history with status, duration, and exit codes",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "limit": .object([
+                                "type": .string("string"),
+                                "description": .string("Number of commands to return (1-50, default: 10)")
+                            ]),
+                            "status": .object([
+                                "type": .string("string"),
+                                "description": .string("Filter by status: 'all', 'success', 'failed' (default: all)")
+                            ]),
+                            "search": .object([
+                                "type": .string("string"),
+                                "description": .string("Search in command text")
+                            ])
+                        ]),
+                        "required": .array([])
+                    ])
+                ),
+                Tool(
+                    name: "self_check",
+                    description: "Run health check on configuration, database, terminal, and recent error rates",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([:]),
+                        "required": .array([])
+                    ])
                 )
             ])
         }
@@ -331,6 +366,11 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 return try await handleRunTemplate(params: params, logger: logger, config: config)
             case "list_templates":
                 return await handleListTemplates(params: params, logger: logger)
+            // NEW v4.1 TOOL HANDLERS
+            case "list_recent_commands":
+                return await handleListRecentCommands(params: params, logger: logger)
+            case "self_check":
+                return await handleSelfCheck(params: params, logger: logger)
             default:
                 return CallTool.Result(
                     content: [.text("Unknown tool: \(params.name)")],

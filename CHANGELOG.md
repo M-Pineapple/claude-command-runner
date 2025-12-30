@@ -5,6 +5,33 @@ All notable changes to Claude Command Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2025-12-30
+
+### Added
+- **Command History** (`list_recent_commands`): View recent command history from SQLite database
+  - Filter by status: `all`, `success`, `failed`
+  - Search within command text
+  - Configurable limit (1-50 commands)
+  - Shows exit codes, duration, timestamps, and working directories
+
+- **Health Check** (`self_check`): Comprehensive system diagnostics
+  - Configuration validation
+  - Database integrity check with statistics
+  - Terminal (Warp) availability detection
+  - Temp directory writability verification
+  - Recent error rate analysis
+  - Returns overall health status with warnings
+
+- **Auto Temp Cleanup**: Automatic cleanup of orphaned temp files on startup
+  - Removes `claude_output_*`, `claude_stream_*`, `claude_script_*` files older than 24 hours
+  - Prevents `/tmp` pollution from interrupted sessions
+  - Logs cleanup statistics
+
+### Technical
+- New file: `HealthAndHistory.swift` containing all v4.1 features
+- Cleanup runs non-blocking on MCP server startup
+- Leverages existing SQLite command history infrastructure
+
 ## [4.0.1] - 2025-12-30
 
 ### Fixed
