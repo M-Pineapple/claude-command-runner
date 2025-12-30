@@ -331,12 +331,15 @@ func handleExecuteWithStreaming(params: CallTool.Parameters, logger: Logger, con
     }
     
     // Wrap command to capture output progressively
+    // BUGFIX v4.0.1: Use pipefail and PIPESTATUS to capture the actual command's exit code,
+    // not the while loop's exit code (which was always 0). Credit: Warp AI audit.
     let wrappedCommand = """
+    set -o pipefail
     (\(fullCommand)) 2>&1 | while IFS= read -r line; do
         echo "$line" >> "\(outputFile)"
         echo "$line"
     done
-    echo $? > "\(exitCodeFile)"
+    echo "${PIPESTATUS[0]}" > "\(exitCodeFile)"
     """
     
     // Start the command in background using terminal
