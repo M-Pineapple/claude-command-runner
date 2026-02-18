@@ -6,26 +6,37 @@ import Foundation
 func createAppleScript(for terminal: TerminalConfig.TerminalType, command: String) -> String {
     switch terminal {
     case .warp, .warpPreview:
+        // Open a new tab before sending command to avoid interfering with running commands
         return """
         tell application "\(terminal.rawValue)" to activate
-        delay 1.0
+        delay 0.5
         tell application "System Events"
+            tell process "\(terminal.rawValue)"
+                -- Open new tab so concurrent commands don't collide
+                click menu item "New Tab" of menu "File" of menu bar 1
+            end tell
+            delay 0.8
             keystroke "\(command)"
             delay 0.2
             keystroke return
         end tell
         """
-        
+
     case .iterm2:
+        // Create a new session (tab) for each command
         return """
         tell application "iTerm"
             activate
-            
-            -- Get current terminal window or create new one
+
             if (count of windows) = 0 then
                 create window with default profile
+            else
+                -- Create new tab in current window for isolation
+                tell current window
+                    create tab with default profile
+                end tell
             end if
-            
+
             tell current window
                 tell current session
                     write text "\(command)"
@@ -33,26 +44,30 @@ func createAppleScript(for terminal: TerminalConfig.TerminalType, command: Strin
             end tell
         end tell
         """
-        
+
     case .terminal:
+        // Always open a new tab for command isolation
         return """
         tell application "Terminal"
             activate
-            
-            -- Check if Terminal has windows
+
             if (count of windows) = 0 then
                 do script "\(command)"
             else
-                -- Use the frontmost window
-                tell front window
-                    do script "\(command)" in selected tab
+                -- Open new tab in frontmost window
+                tell application "System Events"
+                    tell process "Terminal"
+                        click menu item "New Tab" of menu "Shell" of menu bar 1
+                    end tell
                 end tell
+                delay 0.5
+                do script "\(command)" in front window
             end if
         end tell
         """
-        
+
     case .alacritty:
-        // Alacritty doesn't have AppleScript support, use keyboard events
+        // Alacritty doesn't support tabs natively; use keyboard events
         return """
         tell application "Alacritty" to activate
         delay 1.0

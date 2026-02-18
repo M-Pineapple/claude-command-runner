@@ -422,9 +422,7 @@ func handleExecuteCommandV2(params: CallTool.Parameters, logger: Logger, config:
 
             📋 Command ID: \(commandId)
 
-            ⚠️  Please review and press Enter in \(preferredTerminal.rawValue) to execute.
-
-            💡 I'll automatically capture the output. Use 'get_command_output' or wait a moment for the results.
+            💡 Command executes automatically. I'll capture the output — use 'get_command_output' or wait a moment for the results.
             """
             
             return CallTool.Result(content: [.text(result)], isError: false)

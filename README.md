@@ -381,7 +381,7 @@ For longer commands, use `execute_with_streaming` instead.
 **A:** Yes, basic command execution works with any terminal. However, automatic output capture and advanced features require Warp Terminal. [Get Warp free here](https://app.warp.dev/referral/G9W3EY).
 
 ### Q: Is it secure to let Claude run commands?
-**A:** Yes! Every command requires manual approval (pressing Enter), and you can configure blocked commands and patterns in the config file. Claude cannot execute anything without your explicit consent.
+**A:** Commands are sent directly to your terminal and execute automatically — there is no manual "press Enter" step. However, you can configure blocked commands and patterns in the config file to prevent dangerous operations. Always review the command Claude proposes before confirming in the chat interface.
 
 ### Q: What happens if a pipeline step fails?
 **A:** Depends on the `on_fail` setting:

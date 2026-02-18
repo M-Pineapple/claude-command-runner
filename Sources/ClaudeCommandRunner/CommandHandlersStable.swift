@@ -115,9 +115,7 @@ func handleExecuteCommandV2NoMonitoring(params: CallTool.Parameters, logger: Log
             
             📋 Command ID: \(commandId)
             
-            ⚠️  Please review and press Enter in \(preferredTerminal.rawValue) to execute.
-            
-            💡 After the command completes, use 'get_command_output' with ID: \(commandId)
+            💡 Command executes automatically. After it completes, use 'get_command_output' with ID: \(commandId)
             """
             
             return CallTool.Result(content: [.text(result)], isError: false)

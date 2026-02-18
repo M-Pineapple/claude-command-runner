@@ -164,19 +164,35 @@ private func terminalSendToTab(tabIndex: Int, command: String) -> String {
     """
 }
 
-/// Generate AppleScript to send command to the frontmost tab (Warp/Alacritty — no tab targeting)
+/// Generate AppleScript to send command in a new tab (Warp/Alacritty — no native tab targeting)
 private func keystrokeSendCommand(terminal: TerminalConfig.TerminalType, command: String) -> String {
     let escapedCommand = command.replacingOccurrences(of: "\\", with: "\\\\")
                                 .replacingOccurrences(of: "\"", with: "\\\"")
-    return """
-    tell application "\(terminal.rawValue)" to activate
-    delay 0.5
-    tell application "System Events"
-        keystroke "\(escapedCommand)"
-        delay 0.2
-        keystroke return
-    end tell
-    """
+    if terminal == .warp || terminal == .warpPreview {
+        return """
+        tell application "\(terminal.rawValue)" to activate
+        delay 0.5
+        tell application "System Events"
+            tell process "\(terminal.rawValue)"
+                click menu item "New Tab" of menu "File" of menu bar 1
+            end tell
+            delay 0.8
+            keystroke "\(escapedCommand)"
+            delay 0.2
+            keystroke return
+        end tell
+        """
+    } else {
+        return """
+        tell application "\(terminal.rawValue)" to activate
+        delay 0.5
+        tell application "System Events"
+            keystroke "\(escapedCommand)"
+            delay 0.2
+            keystroke return
+        end tell
+        """
+    }
 }
 
 /// Generate AppleScript to close the current tab
