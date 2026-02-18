@@ -148,7 +148,15 @@ cd claude-command-runner
 }
 ```
 
-3. Restart Claude Desktop
+3. Grant Accessibility permission (required for all command execution):
+   - Open **System Settings → Privacy & Security → Accessibility**
+   - Click **+** and navigate to `claude-command-runner/.build/release/`
+   - Press **Cmd+Shift+.** to reveal the hidden `.build` folder
+   - Select the `claude-command-runner` binary and toggle it **on**
+
+> **Important:** macOS tracks permissions by binary identity. After every rebuild (`./build.sh`), you must remove the old entry and re-add the new binary in Accessibility settings.
+
+4. Restart Claude Desktop
 
 ## Usage
 
@@ -434,9 +442,9 @@ This error occurs when macOS blocks AppleScript automation. It's common after fr
 
 ---
 
-### macOS Accessibility Permission Required for Multi-Terminal Sessions
+### macOS Accessibility Permission Issues
 
-The multi-terminal tools (`open_terminal_tab`, `send_to_session`, `close_session`) use System Events UI scripting, which requires the MCP binary to have **Accessibility** permission.
+The MCP binary requires **Accessibility** permission to send commands to your terminal. Without it, all command execution will fail. If you skipped step 3 during installation, do it now.
 
 **Symptoms:**
 - Error message: `osascript is not allowed assistive access. (-1719)`
