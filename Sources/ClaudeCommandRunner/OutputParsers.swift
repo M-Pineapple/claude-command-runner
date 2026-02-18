@@ -207,7 +207,6 @@ private func parseDockerPs(stdout: String, exitCode: Int32) -> String {
 
     var containers: [String] = []
     for line in lines.dropFirst() {
-        let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         containers.append("  • \(line.trimmingCharacters(in: .whitespaces))")
     }
 

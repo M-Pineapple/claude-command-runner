@@ -55,8 +55,23 @@ actor SSHProfileStore {
     private init() {
         let configDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude-command-runner")
-        self.profilesURL = configDir.appendingPathComponent("ssh_profiles.json")
-        loadFromDisk()
+        let url = configDir.appendingPathComponent("ssh_profiles.json")
+        self.profilesURL = url
+
+        // Inline load to avoid actor-isolation warning from calling async method in init
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                let data = try Data(contentsOf: url)
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                let loaded = try decoder.decode([SSHProfile].self, from: data)
+                for p in loaded {
+                    profiles[p.id] = p
+                }
+            } catch {
+                // Silently start fresh if file is corrupt
+            }
+        }
     }
 
     func save(_ profile: SSHProfile) {

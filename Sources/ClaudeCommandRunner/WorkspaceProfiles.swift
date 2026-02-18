@@ -22,8 +22,18 @@ actor WorkspaceProfileManager {
     init() {
         let dir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude-command-runner")
-        profilesPath = dir.appendingPathComponent("profiles.json")
-        loadFromDisk()
+        let path = dir.appendingPathComponent("profiles.json")
+        profilesPath = path
+
+        // Inline load to avoid actor-isolation warning from calling async method in init
+        if FileManager.default.fileExists(atPath: path.path),
+           let data = try? Data(contentsOf: path) {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            if let loaded = try? decoder.decode([String: WorkspaceProfile].self, from: data) {
+                profiles = loaded
+            }
+        }
     }
 
     // MARK: - CRUD

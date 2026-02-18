@@ -209,8 +209,8 @@ func handleSelfCheck(params: CallTool.Parameters, logger: Logger) async -> CallT
 
 /// Check database health and statistics
 private func checkDatabaseHealth() -> (status: String, detail: String) {
-    let commands = DatabaseManager.shared.getRecentCommands(limit: 1)
-    
+    _ = DatabaseManager.shared.getRecentCommands(limit: 1)
+
     // Get database file info
     let homeDir = FileManager.default.homeDirectoryForCurrentUser
     let dbPath = homeDir.appendingPathComponent(".claude-command-runner/claude_commands.db").path

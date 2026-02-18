@@ -139,7 +139,7 @@ actor FileWatcher {
 
     /// Pause a watch without removing it
     func pauseWatch(id: String) -> Bool {
-        guard var watch = activeWatches[id] else { return false }
+        guard let watch = activeWatches[id] else { return false }
         watch.source.suspend()
         var rule = watch.rule
         rule.isActive = false
@@ -150,7 +150,7 @@ actor FileWatcher {
 
     /// Resume a paused watch
     func resumeWatch(id: String) -> Bool {
-        guard var watch = activeWatches[id] else { return false }
+        guard let watch = activeWatches[id] else { return false }
         watch.source.resume()
         var rule = watch.rule
         rule.isActive = true
@@ -207,7 +207,7 @@ actor FileWatcher {
         }
 
         // Update last triggered timestamp
-        if var watch = activeWatches[ruleId] {
+        if let watch = activeWatches[ruleId] {
             activeWatches[ruleId] = ActiveWatch(
                 rule: watch.rule,
                 source: watch.source,
