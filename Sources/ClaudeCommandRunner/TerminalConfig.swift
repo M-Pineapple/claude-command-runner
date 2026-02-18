@@ -17,8 +17,8 @@ public struct TerminalConfig {
         let workspace = NSWorkspace.shared
         
         for terminal in TerminalType.allCases {
-            let bundleId = getBundleIdentifier(for: terminal)
-            if workspace.urlForApplication(withBundleIdentifier: bundleId) != nil {
+            let bundleIds = getBundleIdentifiers(for: terminal)
+            if bundleIds.contains(where: { workspace.urlForApplication(withBundleIdentifier: $0) != nil }) {
                 installed.append(terminal)
             }
         }
@@ -44,20 +44,25 @@ public struct TerminalConfig {
         return .terminal
     }
     
-    /// Get bundle identifier for terminal type
-    public static func getBundleIdentifier(for terminal: TerminalType) -> String {
+    /// Get possible bundle identifiers for terminal type (Warp has multiple distribution variants)
+    public static func getBundleIdentifiers(for terminal: TerminalType) -> [String] {
         switch terminal {
         case .warp:
-            return "dev.warp.Warp"
+            return ["dev.warp.Warp-Stable", "dev.warp.Warp"]
         case .warpPreview:
-            return "dev.warp.Warp-Preview"
+            return ["dev.warp.Warp-Preview"]
         case .iterm2:
-            return "com.googlecode.iterm2"
+            return ["com.googlecode.iterm2"]
         case .terminal:
-            return "com.apple.Terminal"
+            return ["com.apple.Terminal"]
         case .alacritty:
-            return "org.alacritty"
+            return ["org.alacritty"]
         }
+    }
+
+    /// Get primary bundle identifier for terminal type
+    public static func getBundleIdentifier(for terminal: TerminalType) -> String {
+        return getBundleIdentifiers(for: terminal).first!
     }
     
     /// Get database path for Warp terminals
@@ -66,7 +71,10 @@ public struct TerminalConfig {
         
         switch terminal {
         case .warp:
-            return "\(homeDir)/Library/Application Support/dev.warp.Warp/warp.sqlite"
+            // Check Stable variant first (more common), then standard
+            let stablePath = "\(homeDir)/Library/Application Support/dev.warp.Warp-Stable/warp.sqlite"
+            let standardPath = "\(homeDir)/Library/Application Support/dev.warp.Warp/warp.sqlite"
+            return FileManager.default.fileExists(atPath: stablePath) ? stablePath : standardPath
         case .warpPreview:
             return "\(homeDir)/Library/Application Support/dev.warp.Warp-Preview/warp.sqlite"
         default:

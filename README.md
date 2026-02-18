@@ -4,20 +4,27 @@
   <img src="https://github.com/user-attachments/assets/13d56902-b9d7-4368-b44f-2cefa15bf746">
 </div>
 
-A powerful Model Context Protocol (MCP) server that bridges Claude Desktop and terminal applications, enabling seamless command execution with intelligent output retrieval, command pipelines, real-time streaming, and reusable templates.
+A powerful Model Context Protocol (MCP) server that bridges Claude Desktop and terminal applications, enabling seamless command execution with intelligent output retrieval, command pipelines, real-time streaming, workspace profiles, environment intelligence, and 30 integrated tools.
 
-## 🚀 What's New in v4.0
+## 🚀 What's New in v5.0.0
 
-- **Command Pipelines**: Chain multiple commands with conditional logic (stop/continue/warn on failure)
-- **Output Streaming**: Real-time output for long-running builds – no more hanging or timeouts
-- **Command Templates**: Save reusable command patterns with `{{variable}}` placeholders
-- **Enhanced Workflow**: Perfect for complex build processes, CI/CD-style workflows, and repetitive tasks
+**Major release: 30 tools, up from 12.** Every feature below is a new MCP tool accessible directly from Claude Desktop.
 
-### v3.0 Foundation (Included)
-- Enhanced Auto-Retrieve with progressive delays and smart command detection
-- Rock-solid stability with persistent server operation
-- SQLite database for command history and analytics
-- Configurable security and behavior settings
+- **Clipboard Bridge**: Read from and write to the macOS clipboard without leaving the conversation
+- **macOS Notifications**: Get native notifications when long-running commands finish
+- **Environment Intelligence**: Probe your terminal context (git branch, active venv, Node version, Docker containers) in one call
+- **Output Parsers**: Structured JSON parsing for `git status`, `docker ps`, test results, and more
+- **Environment Snapshots**: Capture and diff environment variables before/after installs or config changes
+- **Workspace Profiles**: Save and restore project contexts (directory, env vars, common commands) per project
+- **Multi-Terminal Sessions**: Open, name, and send commands to multiple terminal tabs
+- **Interactive Command Detection**: Smart detection of interactive commands (vim, ssh, python REPL) with graceful handling
+- **File System Watchers**: Watch directories for changes and trigger commands automatically
+- **SSH Remote Execution**: Run commands on remote hosts via SSH key authentication
+
+### Previous Releases (Included)
+
+- **v4.0**: Command pipelines, output streaming, reusable templates
+- **v3.0**: Smart auto-retrieve, SQLite history, configurable security
 
 ## Overview
 
@@ -28,6 +35,13 @@ Claude Command Runner revolutionises the development workflow by allowing Claude
 - Save and reuse command templates with variables
 - Automatically capture output with intelligent timing
 - Track command history and patterns
+- Read/write the macOS clipboard
+- Probe environment context (git, venv, Docker, Node)
+- Parse command output into structured JSON
+- Manage workspace profiles per project
+- Orchestrate multiple terminal tabs
+- Watch files and trigger commands on changes
+- Execute commands on remote hosts via SSH
 
 ## 🎯 Key Features
 
@@ -138,7 +152,9 @@ cd claude-command-runner
 
 ## Usage
 
-### Available Tools
+### Available Tools (30)
+
+#### Core Execution
 
 | Tool | Description | Use Case |
 |------|-------------|----------|
@@ -152,6 +168,65 @@ cd claude-command-runner
 | `get_command_output` | Manually retrieve command output | Debugging |
 | `preview_command` | Preview without executing | Safety check |
 | `suggest_command` | Get command suggestions | Discovery |
+| `list_recent_commands` | View command history | Analytics |
+| `self_check` | System health diagnostics | Troubleshooting |
+
+#### Clipboard (v5.0)
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `copy_to_clipboard` | Write text to macOS clipboard | Share output |
+| `read_from_clipboard` | Read current clipboard content | Paste context |
+
+#### Notifications (v5.0)
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `set_notification_preference` | Toggle macOS notifications | Personalisation |
+
+#### Environment Intelligence (v5.0)
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `get_environment_context` | Probe git, venv, Node, Docker state | Context awareness |
+| `execute_and_parse` | Execute and parse output to structured JSON | Smart output |
+| `capture_environment` | Snapshot all environment variables | Before/after comparison |
+| `diff_environment` | Compare two environment snapshots | Change detection |
+
+#### Workspace Profiles (v5.0)
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `save_workspace_profile` | Save project context as named profile | Project switching |
+| `load_workspace_profile` | Restore a saved project context | Resume work |
+| `list_workspace_profiles` | View all saved profiles | Organisation |
+| `delete_workspace_profile` | Remove a workspace profile | Cleanup |
+
+#### Multi-Terminal Sessions (v5.0)
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `open_terminal_tab` | Open a new named terminal tab | Parallel workflows |
+| `send_to_session` | Send command to a specific tab | Targeted execution |
+| `list_sessions` | View active terminal sessions | Session overview |
+| `close_session` | Close a named session | Cleanup |
+
+#### File Watching (v5.0)
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `add_file_watch` | Watch directory and trigger command on changes | Auto-rebuild, auto-test |
+| `remove_file_watch` | Stop watching a directory | Cleanup |
+| `list_file_watches` | View active watchers | Overview |
+
+#### SSH Remote Execution (v5.0)
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `ssh_execute` | Run command on remote host via SSH | Remote ops |
+| `save_ssh_profile` | Save SSH connection profile | Quick connect |
+| `list_ssh_profiles` | View saved SSH profiles | Overview |
+| `delete_ssh_profile` | Remove an SSH profile | Cleanup |
 
 ### Example Workflows
 
@@ -186,6 +261,36 @@ You: "Deploy MyApp to staging"
 Claude: [run_template: name="deploy-staging", variables={project: "MyApp"}]
 ```
 
+**Environment Context (v5.0):**
+```
+You: "What's my current dev environment?"
+Claude: [get_environment_context]
+Claude: "You're on branch feature/auth, Python venv active, Node 20.11, 3 Docker containers running."
+```
+
+**Workspace Profiles (v5.0):**
+```
+You: "Save this as my API project profile"
+Claude: [save_workspace_profile: name="api-project", directory="~/Projects/api", ...]
+
+You: "Switch to the API project"
+Claude: [load_workspace_profile: name="api-project"]
+```
+
+**File Watching (v5.0):**
+```
+You: "Rebuild whenever a Swift file changes"
+Claude: [add_file_watch: path="./Sources", pattern="*.swift", command="swift build"]
+Claude: "Watching ./Sources for *.swift changes. Will run swift build on each change."
+```
+
+**SSH Remote Execution (v5.0):**
+```
+You: "Check disk space on the staging server"
+Claude: [ssh_execute: host="staging.example.com", username="deploy", command="df -h"]
+Claude: "Here's the disk usage on staging..."
+```
+
 ## Configuration
 
 The configuration file is located at `~/.claude-command-runner/config.json`:
@@ -203,19 +308,38 @@ The configuration file is located at `~/.claude-command-runner/config.json`:
   "history": {
     "enabled": true,
     "maxEntries": 10000
+  },
+  "notifications": {
+    "enabled": true,
+    "soundEnabled": true,
+    "showOnSuccess": false,
+    "showOnFailure": true,
+    "minimumDuration": 10
+  },
+  "fileWatching": {
+    "maxWatchers": 5,
+    "defaultDebounce": 2.0,
+    "autoExpireMinutes": 60
+  },
+  "ssh": {
+    "defaultTimeout": 30,
+    "allowPasswordAuth": false
+  },
+  "interactiveDetection": {
+    "enabled": true,
+    "customPatterns": []
   }
 }
 ```
 
 Templates are stored separately at `~/.claude-command-runner/templates.json`.
+Workspace profiles are stored at `~/.claude-command-runner/profiles.json`.
+SSH profiles are stored at `~/.claude-command-runner/ssh_profiles.json`.
 
 ## 🤔 Frequently Asked Questions
 
-### Q: What's new in v4.0?
-**A:** Three major features:
-1. **Pipelines** – Chain commands with stop/continue/warn logic
-2. **Streaming** – Real-time output for long builds (no more hanging!)
-3. **Templates** – Save and reuse command patterns with variables
+### Q: What's new in v5.0.0?
+**A:** Ten new feature categories bringing the tool count from 12 to 30. Highlights include clipboard integration, macOS notifications, environment intelligence, structured output parsing, workspace profiles, multi-terminal sessions, file watchers, and SSH remote execution. See the full changelog for details.
 
 ### Q: When should I use pipelines vs regular commands?
 **A:** Use pipelines when you need:
@@ -310,6 +434,28 @@ This error occurs when macOS blocks AppleScript automation. It's common after fr
 
 ---
 
+### macOS Accessibility Permission Required for Multi-Terminal Sessions
+
+The multi-terminal tools (`open_terminal_tab`, `send_to_session`, `close_session`) use System Events UI scripting, which requires the MCP binary to have **Accessibility** permission.
+
+**Symptoms:**
+- Error message: `osascript is not allowed assistive access. (-1719)`
+- Multi-terminal tools fail while other tools (clipboard, SSH, environment context) work fine
+
+**Solution:**
+
+1. Open **System Settings → Privacy & Security → Accessibility**
+2. Click the **+** button and navigate to your `claude-command-runner` binary:
+   ```
+   /path/to/claude-command-runner/.build/arm64-apple-macosx/release/claude-command-runner
+   ```
+3. The `.build` folder is hidden by default — press **Cmd+Shift+.** in Finder to reveal it
+4. Toggle the permission **on** for the binary
+
+**Important:** macOS tracks Accessibility permissions by binary identity. After every `swift build`, the binary changes and you must **re-add it** to the Accessibility list. This only affects the multi-terminal session tools — all other tools work without Accessibility permission.
+
+---
+
 ### MCP Not Responding
 1. Check if the server is running: `lsof -i :9876`
 2. Restart Claude Desktop
@@ -359,12 +505,18 @@ If commands execute but aren't saved to the database:
 ```
 ┌─────────────────┐         ┌──────────────────┐         ┌────────────────┐
 │ Claude Desktop  │ ←────→  │ Command Runner   │ ←────→  │ Warp Terminal  │
-│                 │  MCP    │ MCP Server v4.0  │ Script  │                │
-│ • Pipelines     │         │ • Port 9876      │         │ • Execute      │
-│ • Streaming     │         │ • Templates      │         │ • Capture      │
-│ • Templates     │         │ • SQLite DB      │         │ • Stream       │
-│ • Auto-retrieve │         │ • Progress Delay │         │ • Return       │
+│                 │  MCP    │ MCP Server v5.0  │ Script  │                │
+│ • 30 Tools      │         │ • Port 9876      │         │ • Execute      │
+│ • Pipelines     │         │ • Templates      │         │ • Capture      │
+│ • Streaming     │         │ • SQLite DB      │         │ • Stream       │
+│ • Profiles      │         │ • File Watchers  │         │ • Multi-tab    │
+│ • Clipboard     │         │ • SSH Profiles   │         │ • Return       │
 └─────────────────┘         └──────────────────┘         └────────────────┘
+                                     │
+                            ┌────────┴────────┐
+                            │  Remote Hosts   │
+                            │  (via SSH)      │
+                            └─────────────────┘
 ```
 
 ## Contributing

@@ -118,7 +118,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
         // Create the MCP server
         let server = Server(
             name: "Claude Command Runner",
-            version: "4.1.0",
+            version: "5.0.0",
             capabilities: .init(
                 tools: .init(listChanged: false)
             )
@@ -335,6 +335,417 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                         "properties": .object([:]),
                         "required": .array([])
                     ])
+                ),
+                // NEW v5.0.0 TOOLS — Clipboard Bridge
+                Tool(
+                    name: "copy_to_clipboard",
+                    description: "Copy text to the macOS system clipboard",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "text": .object([
+                                "type": .string("string"),
+                                "description": .string("The text to copy to clipboard")
+                            ])
+                        ]),
+                        "required": .array([.string("text")])
+                    ])
+                ),
+                Tool(
+                    name: "read_from_clipboard",
+                    description: "Read the current contents of the macOS system clipboard",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([:]),
+                        "required": .array([])
+                    ])
+                ),
+                // Notification Preferences
+                Tool(
+                    name: "set_notification_preference",
+                    description: "Toggle macOS notification preferences for command completion alerts",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "enabled": .object([
+                                "type": .string("boolean"),
+                                "description": .string("Enable or disable notifications")
+                            ]),
+                            "sound": .object([
+                                "type": .string("boolean"),
+                                "description": .string("Enable or disable notification sounds")
+                            ]),
+                            "notify_on_success": .object([
+                                "type": .string("boolean"),
+                                "description": .string("Notify on successful commands")
+                            ]),
+                            "notify_on_failure": .object([
+                                "type": .string("boolean"),
+                                "description": .string("Notify on failed commands")
+                            ]),
+                            "minimum_duration": .object([
+                                "type": .string("number"),
+                                "description": .string("Minimum command duration (seconds) before notification triggers")
+                            ])
+                        ]),
+                        "required": .array([])
+                    ])
+                ),
+                // Environment Context
+                Tool(
+                    name: "get_environment_context",
+                    description: "Get current terminal environment context including git branch, active venv, node version, docker status, and working directory",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "working_directory": .object([
+                                "type": .string("string"),
+                                "description": .string("Optional directory to check context for (defaults to current)")
+                            ])
+                        ]),
+                        "required": .array([])
+                    ])
+                ),
+                // Output Intelligence
+                Tool(
+                    name: "execute_and_parse",
+                    description: "Execute a command and return structured parsed output (supports git status, git log, docker ps, test results, ls -la, and JSON)",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "command": .object([
+                                "type": .string("string"),
+                                "description": .string("The command to execute and parse")
+                            ]),
+                            "working_directory": .object([
+                                "type": .string("string"),
+                                "description": .string("Optional working directory")
+                            ]),
+                            "parser": .object([
+                                "type": .string("string"),
+                                "description": .string("Force a specific parser: git_status, git_log, docker_ps, test_results, ls, json, auto (default: auto)")
+                            ])
+                        ]),
+                        "required": .array([.string("command")])
+                    ])
+                ),
+                // Environment Snapshots
+                Tool(
+                    name: "capture_environment",
+                    description: "Capture a snapshot of the current shell environment variables with a named label",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Label for this snapshot (e.g. 'before-install', 'clean-state')")
+                            ])
+                        ]),
+                        "required": .array([.string("name")])
+                    ])
+                ),
+                Tool(
+                    name: "diff_environment",
+                    description: "Compare two environment snapshots and show additions, removals, and changes",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "from": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of the 'before' snapshot")
+                            ]),
+                            "to": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of the 'after' snapshot")
+                            ])
+                        ]),
+                        "required": .array([.string("from"), .string("to")])
+                    ])
+                ),
+                // Workspace Profiles
+                Tool(
+                    name: "save_workspace_profile",
+                    description: "Save current project context as a named workspace profile (directory, commands, env vars, terminal preference)",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Profile name (e.g. 'my-swift-project')")
+                            ]),
+                            "directory": .object([
+                                "type": .string("string"),
+                                "description": .string("Working directory for this profile")
+                            ]),
+                            "default_commands": .object([
+                                "type": .string("array"),
+                                "description": .string("Array of commonly used commands for this project")
+                            ]),
+                            "environment_vars": .object([
+                                "type": .string("object"),
+                                "description": .string("Environment variables to set when loading this profile")
+                            ]),
+                            "terminal_preference": .object([
+                                "type": .string("string"),
+                                "description": .string("Preferred terminal for this project (Warp, iTerm, Terminal)")
+                            ])
+                        ]),
+                        "required": .array([.string("name"), .string("directory")])
+                    ])
+                ),
+                Tool(
+                    name: "load_workspace_profile",
+                    description: "Load a saved workspace profile to restore project context",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of the profile to load")
+                            ])
+                        ]),
+                        "required": .array([.string("name")])
+                    ])
+                ),
+                Tool(
+                    name: "list_workspace_profiles",
+                    description: "List all saved workspace profiles",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([:]),
+                        "required": .array([])
+                    ])
+                ),
+                Tool(
+                    name: "delete_workspace_profile",
+                    description: "Delete a saved workspace profile",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of the profile to delete")
+                            ])
+                        ]),
+                        "required": .array([.string("name")])
+                    ])
+                ),
+                // Terminal Sessions
+                Tool(
+                    name: "open_terminal_tab",
+                    description: "Open a new named terminal tab or window",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Name/label for this terminal session")
+                            ]),
+                            "working_directory": .object([
+                                "type": .string("string"),
+                                "description": .string("Optional initial working directory")
+                            ])
+                        ]),
+                        "required": .array([.string("name")])
+                    ])
+                ),
+                Tool(
+                    name: "send_to_session",
+                    description: "Send a command to a specific named terminal session",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "session_name": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of the target session")
+                            ]),
+                            "command": .object([
+                                "type": .string("string"),
+                                "description": .string("The command to send")
+                            ])
+                        ]),
+                        "required": .array([.string("session_name"), .string("command")])
+                    ])
+                ),
+                Tool(
+                    name: "list_sessions",
+                    description: "List all active terminal sessions",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([:]),
+                        "required": .array([])
+                    ])
+                ),
+                Tool(
+                    name: "close_session",
+                    description: "Close a named terminal session",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "session_name": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of the session to close")
+                            ])
+                        ]),
+                        "required": .array([.string("session_name")])
+                    ])
+                ),
+                // File Watching
+                Tool(
+                    name: "add_file_watch",
+                    description: "Set up a file system watcher that triggers a command when files change",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "path": .object([
+                                "type": .string("string"),
+                                "description": .string("Directory path to watch")
+                            ]),
+                            "pattern": .object([
+                                "type": .string("string"),
+                                "description": .string("Glob pattern to filter (e.g. '*.swift', '*.ts')")
+                            ]),
+                            "command": .object([
+                                "type": .string("string"),
+                                "description": .string("Command to run when files change")
+                            ]),
+                            "debounce_seconds": .object([
+                                "type": .string("number"),
+                                "description": .string("Debounce interval in seconds (default: 2.0)")
+                            ])
+                        ]),
+                        "required": .array([.string("path"), .string("command")])
+                    ])
+                ),
+                Tool(
+                    name: "remove_file_watch",
+                    description: "Remove an active file system watcher",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "watcher_id": .object([
+                                "type": .string("string"),
+                                "description": .string("ID of the watcher to remove")
+                            ])
+                        ]),
+                        "required": .array([.string("watcher_id")])
+                    ])
+                ),
+                Tool(
+                    name: "list_file_watches",
+                    description: "List all active file system watchers",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([:]),
+                        "required": .array([])
+                    ])
+                ),
+                // SSH Execution
+                Tool(
+                    name: "ssh_execute",
+                    description: "Execute a command on a remote host via SSH (key-based authentication only)",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "host": .object([
+                                "type": .string("string"),
+                                "description": .string("Remote hostname or IP address")
+                            ]),
+                            "username": .object([
+                                "type": .string("string"),
+                                "description": .string("SSH username")
+                            ]),
+                            "command": .object([
+                                "type": .string("string"),
+                                "description": .string("Command to execute remotely")
+                            ]),
+                            "identity_file": .object([
+                                "type": .string("string"),
+                                "description": .string("Path to SSH private key (optional)")
+                            ]),
+                            "port": .object([
+                                "type": .string("integer"),
+                                "description": .string("SSH port (default: 22)")
+                            ]),
+                            "timeout": .object([
+                                "type": .string("integer"),
+                                "description": .string("Connection timeout in seconds (default: 30)")
+                            ]),
+                            "profile": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of saved SSH profile to use instead of specifying host/username/key")
+                            ])
+                        ]),
+                        "required": .array([.string("command")])
+                    ])
+                ),
+                Tool(
+                    name: "save_ssh_profile",
+                    description: "Save an SSH connection profile for quick reuse",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Profile name")
+                            ]),
+                            "host": .object([
+                                "type": .string("string"),
+                                "description": .string("Remote hostname or IP")
+                            ]),
+                            "username": .object([
+                                "type": .string("string"),
+                                "description": .string("SSH username")
+                            ]),
+                            "identity_file": .object([
+                                "type": .string("string"),
+                                "description": .string("Path to SSH private key")
+                            ]),
+                            "port": .object([
+                                "type": .string("integer"),
+                                "description": .string("SSH port (default: 22)")
+                            ])
+                        ]),
+                        "required": .array([.string("name"), .string("host"), .string("username")])
+                    ])
+                ),
+                Tool(
+                    name: "list_ssh_profiles",
+                    description: "List all saved SSH connection profiles",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([:]),
+                        "required": .array([])
+                    ])
+                ),
+                Tool(
+                    name: "delete_ssh_profile",
+                    description: "Delete a saved SSH connection profile",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "name": .object([
+                                "type": .string("string"),
+                                "description": .string("Name of the SSH profile to delete")
+                            ])
+                        ]),
+                        "required": .array([.string("name")])
+                    ])
+                ),
+                // Interactive Command Detection
+                Tool(
+                    name: "check_interactive",
+                    description: "Check if a command is interactive (requires TTY/stdin) before executing it. Returns safety level: safe, cautious, interactive, or blocked with suggestions for non-interactive alternatives",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "command": .object([
+                                "type": .string("string"),
+                                "description": .string("The command to analyse for interactivity")
+                            ])
+                        ]),
+                        "required": .array([.string("command")])
+                    ])
                 )
             ])
         }
@@ -371,6 +782,62 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 return await handleListRecentCommands(params: params, logger: logger)
             case "self_check":
                 return await handleSelfCheck(params: params, logger: logger)
+            // NEW v5.0.0 TOOL HANDLERS — Clipboard
+            case "copy_to_clipboard":
+                return await handleCopyToClipboard(params: params, logger: logger)
+            case "read_from_clipboard":
+                return await handleReadFromClipboard(params: params, logger: logger)
+            // Notifications
+            case "set_notification_preference":
+                return await handleSetNotificationPreference(params: params, logger: logger)
+            // Environment Context
+            case "get_environment_context":
+                return await handleGetEnvironmentContext(params: params, logger: logger, config: config)
+            // Output Intelligence
+            case "execute_and_parse":
+                return try await handleExecuteAndParse(params: params, logger: logger, config: config)
+            // Environment Snapshots
+            case "capture_environment":
+                return await handleCaptureEnvironment(params: params, logger: logger)
+            case "diff_environment":
+                return await handleDiffEnvironment(params: params, logger: logger)
+            // Workspace Profiles
+            case "save_workspace_profile":
+                return await handleSaveWorkspaceProfile(params: params, logger: logger)
+            case "load_workspace_profile":
+                return await handleLoadWorkspaceProfile(params: params, logger: logger)
+            case "list_workspace_profiles":
+                return await handleListWorkspaceProfiles(params: params, logger: logger)
+            case "delete_workspace_profile":
+                return await handleDeleteWorkspaceProfile(params: params, logger: logger)
+            // Terminal Sessions
+            case "open_terminal_tab":
+                return await handleOpenTerminalTab(params: params, logger: logger)
+            case "send_to_session":
+                return await handleSendToSession(params: params, logger: logger)
+            case "list_sessions":
+                return await handleListSessions(params: params, logger: logger)
+            case "close_session":
+                return await handleCloseSession(params: params, logger: logger)
+            // File Watching
+            case "add_file_watch":
+                return await handleAddFileWatch(params: params, logger: logger)
+            case "remove_file_watch":
+                return await handleRemoveFileWatch(params: params, logger: logger)
+            case "list_file_watches":
+                return await handleListFileWatches(params: params, logger: logger)
+            // Interactive Command Detection
+            case "check_interactive":
+                return await handleCheckInteractive(params: params, logger: logger)
+            // SSH Execution
+            case "ssh_execute":
+                return await handleSSHExecute(params: params, logger: logger, config: config)
+            case "save_ssh_profile":
+                return await handleSaveSSHProfile(params: params, logger: logger)
+            case "list_ssh_profiles":
+                return await handleListSSHProfiles(params: params, logger: logger)
+            case "delete_ssh_profile":
+                return await handleDeleteSSHProfile(params: params, logger: logger)
             default:
                 return CallTool.Result(
                     content: [.text("Unknown tool: \(params.name)")],

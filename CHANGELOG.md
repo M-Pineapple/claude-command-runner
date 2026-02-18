@@ -5,6 +5,42 @@ All notable changes to Claude Command Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-02-18
+
+### Added
+
+- **Clipboard Bridge** (`copy_to_clipboard`, `read_from_clipboard`): Read and write the macOS clipboard directly from Claude Desktop via NSPasteboard.
+
+- **macOS Notifications** (`set_notification_preference`): Native macOS notifications when long-running commands complete. Configurable sound, success/failure filtering, and minimum duration threshold.
+
+- **Environment Intelligence** (`get_environment_context`): Single-call probe of terminal context including current directory, git branch and status, active Python venv, Node version, Docker containers, Conda environment, and NVM version.
+
+- **Output Parsers** (`execute_and_parse`): Structured JSON parsing for common command outputs. Supported parsers: `git status`, `git log`, `docker ps`, `npm test`/`pytest`, `ls -la`, plus generic JSON passthrough.
+
+- **Environment Snapshots** (`capture_environment`, `diff_environment`): Capture named snapshots of all environment variables and diff any two snapshots to see additions, removals, and changes.
+
+- **Workspace Profiles** (`save_workspace_profile`, `load_workspace_profile`, `list_workspace_profiles`, `delete_workspace_profile`): Save and restore project contexts including working directory, environment variables, default commands, and terminal preference. Stored at `~/.claude-command-runner/profiles.json`.
+
+- **Multi-Terminal Sessions** (`open_terminal_tab`, `send_to_session`, `list_sessions`, `close_session`): Orchestrate multiple named terminal tabs. Open tabs, send commands to specific sessions, and manage the session lifecycle.
+
+- **Interactive Command Detection**: Smart detection of interactive commands (ssh, vim, nano, python REPL, psql, etc.) with graceful handling. Instead of timing out, returns a warning and directs the user to interact directly in the terminal. Configurable via `interactiveDetection.customPatterns`.
+
+- **File System Watchers** (`add_file_watch`, `remove_file_watch`, `list_file_watches`): Watch directories for file changes using FSEvents. Trigger commands automatically with configurable glob patterns and debounce. Max 5 concurrent watchers with auto-expiry.
+
+- **SSH Remote Execution** (`ssh_execute`, `save_ssh_profile`, `list_ssh_profiles`, `delete_ssh_profile`): Run commands on remote hosts via SSH key authentication. Connection profiles stored at `~/.claude-command-runner/ssh_profiles.json`. Key-only auth by default for security.
+
+### Changed
+- Version bumped from 4.1.0 to 5.0.0
+- Tool count expanded from 12 to 30
+- Configuration extended with 5 new sections: `notifications`, `workspace`, `fileWatching`, `ssh`, `interactiveDetection`
+- Security blocked-command checks now also apply to SSH remote commands
+
+### Technical
+- 8 new source files: `ClipboardBridge.swift`, `EnvironmentContext.swift`, `OutputParsers.swift`, `EnvironmentSnapshot.swift`, `WorkspaceProfiles.swift`, `TerminalSessions.swift`, `FileWatcher.swift`, `SSHExecution.swift`
+- Modified: `CommandHandlers.swift` (interactive detection), `NotificationSupport.swift` (real macOS notifications), `Configuration.swift` (new config sections + validation), `ClaudeCommandRunner.swift` (tool registration)
+- All new features use Foundation/AppKit — no new external dependencies
+- Actor-based concurrency for thread-safe state management (EnvironmentStore, FileWatcher, SessionManager, SSHProfileStore)
+
 ## [4.1.0] - 2025-12-30
 
 ### Added
@@ -174,9 +210,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upgrade Guide
 
+### From 4.x to 5.0.0
+- No breaking changes — all existing tools work identically
+- Rebuild with `swift build -c release`
+- Restart Claude Desktop to load updated MCP
+- New config sections are auto-populated with sensible defaults on first run
+- New data files (`profiles.json`, `ssh_profiles.json`) are created on first use
+
 ### From 4.0.0 to 4.0.1
 - No breaking changes - patch fix only
-- Rebuild with `swift build -c release` 
+- Rebuild with `swift build -c release`
 - Restart Claude Desktop to load updated MCP
 
 ### From 2.1 to 2.2

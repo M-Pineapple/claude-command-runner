@@ -54,12 +54,47 @@ public struct Configuration: Codable {
         public var maxFileSize: Int = 10485760 // 10MB
         public var rotateCount: Int = 5
     }
-    
+
+    public struct Notifications: Codable {
+        public var enabled: Bool = true
+        public var soundEnabled: Bool = true
+        public var showOnSuccess: Bool = false
+        public var showOnFailure: Bool = true
+        public var minimumDuration: TimeInterval = 10
+    }
+
+    public struct Workspace: Codable {
+        public var autoDetectProfiles: Bool = true
+        public var profilesPath: String?
+    }
+
+    public struct FileWatching: Codable {
+        public var maxWatchers: Int = 5
+        public var defaultDebounce: TimeInterval = 2.0
+        public var autoExpireMinutes: Int = 60
+    }
+
+    public struct SSHConfig: Codable {
+        public var defaultTimeout: Int = 30
+        public var profilesPath: String?
+        public var allowPasswordAuth: Bool = false
+    }
+
+    public struct InteractiveDetection: Codable {
+        public var enabled: Bool = true
+        public var customPatterns: [String] = []
+    }
+
     public var terminal: Terminal = Terminal()
     public var security: Security = Security()
     public var output: Output = Output()
     public var history: History = History()
     public var logging: Logging = Logging()
+    public var notifications: Notifications = Notifications()
+    public var workspace: Workspace = Workspace()
+    public var fileWatching: FileWatching = FileWatching()
+    public var ssh: SSHConfig = SSHConfig()
+    public var interactiveDetection: InteractiveDetection = InteractiveDetection()
     public var port: Int = 9876
     public var autoUpdate: Bool = true
     
@@ -194,7 +229,28 @@ public class ConfigurationManager {
         if configuration.port < 1024 || configuration.port > 65535 {
             errors.append("Port must be between 1024 and 65535")
         }
-        
+
+        // Validate file watching
+        if configuration.fileWatching.maxWatchers < 1 || configuration.fileWatching.maxWatchers > 50 {
+            errors.append("Max file watchers must be between 1 and 50")
+        }
+        if configuration.fileWatching.defaultDebounce < 0.1 {
+            errors.append("File watcher debounce must be at least 0.1 seconds")
+        }
+        if configuration.fileWatching.autoExpireMinutes < 1 {
+            errors.append("File watcher auto-expire must be at least 1 minute")
+        }
+
+        // Validate SSH
+        if configuration.ssh.defaultTimeout < 5 || configuration.ssh.defaultTimeout > 300 {
+            errors.append("SSH timeout must be between 5 and 300 seconds")
+        }
+
+        // Validate notifications
+        if configuration.notifications.minimumDuration < 0 {
+            errors.append("Notification minimum duration cannot be negative")
+        }
+
         return errors
     }
 }
