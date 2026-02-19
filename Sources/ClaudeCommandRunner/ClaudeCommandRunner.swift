@@ -148,7 +148,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 ),
                 Tool(
                     name: "execute_command",
-                    description: "Executes a terminal command and captures its output",
+                    description: "Executes a terminal command and captures its output. Preferred for quick commands (ls, git status, cat, echo, etc.) that don't need a visible terminal tab. Use open_terminal_tab only for long-running processes.",
                     inputSchema: .object([
                         "type": .string("object"),
                         "properties": .object([
@@ -166,7 +166,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 ),
                 Tool(
                     name: "execute_with_auto_retrieve",
-                    description: "Executes a command and automatically waits for and returns its output",
+                    description: "Executes a command and automatically waits for and returns its output. Preferred for quick commands that don't need a visible terminal tab. Use open_terminal_tab only for long-running processes like builds or servers.",
                     inputSchema: .object([
                         "type": .string("object"),
                         "properties": .object([
@@ -533,7 +533,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 // Terminal Sessions
                 Tool(
                     name: "open_terminal_tab",
-                    description: "Open a new named terminal tab or window",
+                    description: "Open a new named terminal tab. ONLY use for long-running commands that need their own visible tab (builds, installs, servers, cloning repos). For quick commands, prefer execute_command or execute_with_auto_retrieve instead. If a session already exists, use send_to_session to reuse it.",
                     inputSchema: .object([
                         "type": .string("object"),
                         "properties": .object([
@@ -551,7 +551,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 ),
                 Tool(
                     name: "send_to_session",
-                    description: "Send a command to a specific named terminal session",
+                    description: "Send a command to an existing named terminal session, reusing its tab. Always prefer this over opening a new tab when a relevant session already exists. Use list_sessions first to check for available sessions.",
                     inputSchema: .object([
                         "type": .string("object"),
                         "properties": .object([
@@ -569,7 +569,7 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 ),
                 Tool(
                     name: "list_sessions",
-                    description: "List all active terminal sessions",
+                    description: "List all active terminal sessions. Check this before opening new tabs to avoid creating duplicates. Reuse existing sessions with send_to_session whenever possible.",
                     inputSchema: .object([
                         "type": .string("object"),
                         "properties": .object([:]),
@@ -578,16 +578,38 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 ),
                 Tool(
                     name: "close_session",
-                    description: "Close a named terminal session",
+                    description: "Close a named terminal session and optionally close its tab. Use to clean up sessions that are no longer needed. Pass close_tab: true to also close the terminal tab.",
                     inputSchema: .object([
                         "type": .string("object"),
                         "properties": .object([
                             "session_name": .object([
                                 "type": .string("string"),
                                 "description": .string("Name of the session to close")
+                            ]),
+                            "close_tab": .object([
+                                "type": .string("boolean"),
+                                "description": .string("If true, also closes the terminal tab (default: false)")
                             ])
                         ]),
                         "required": .array([.string("session_name")])
+                    ])
+                ),
+                Tool(
+                    name: "cleanup_sessions",
+                    description: "Remove stale terminal sessions that have been inactive. Use periodically to clean up accumulated tabs. Sessions inactive longer than inactive_minutes (default: 30) are removed. Set close_tabs to true to also close the terminal tabs.",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "inactive_minutes": .object([
+                                "type": .string("number"),
+                                "description": .string("Minutes of inactivity before a session is considered stale (default: 30)")
+                            ]),
+                            "close_tabs": .object([
+                                "type": .string("boolean"),
+                                "description": .string("If true, also closes the terminal tabs for stale sessions (default: true)")
+                            ])
+                        ]),
+                        "required": .array([])
                     ])
                 ),
                 // File Watching
@@ -819,6 +841,8 @@ struct ClaudeCommandRunner: AsyncParsableCommand {
                 return await handleListSessions(params: params, logger: logger)
             case "close_session":
                 return await handleCloseSession(params: params, logger: logger)
+            case "cleanup_sessions":
+                return await handleCleanupSessions(params: params, logger: logger)
             // File Watching
             case "add_file_watch":
                 return await handleAddFileWatch(params: params, logger: logger)

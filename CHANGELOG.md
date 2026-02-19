@@ -5,6 +5,16 @@ All notable changes to Claude Command Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.1] - 2026-02-19
+
+### Fixed
+- **Tab proliferation**: Commands no longer open a new Warp terminal tab every time. `keystrokeSendCommand()` replaced with `keystrokeSendToCurrentTab()`, which sends commands to the active tab instead of spawning new ones.
+- **Session cleanup**: Added `cleanup_sessions` tool (tool #31) to remove stale terminal sessions after a configurable inactivity period and optionally close their associated Warp tabs.
+
+### Changed
+- `open_terminal_tab` and `send_to_session` updated to use `keystrokeSendToCurrentTab()` for Warp tab reuse
+- Session manager now tracks `lastActivity` timestamps for stale session detection
+
 ## [5.0.0] - 2026-02-18
 
 ### Added

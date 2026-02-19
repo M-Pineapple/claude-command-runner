@@ -59,6 +59,25 @@ actor SessionManager {
     func exists(name: String) -> Bool {
         return sessions[name] != nil
     }
+
+    /// Return sessions that haven't received a command in the given interval
+    func staleSessions(olderThan interval: TimeInterval) -> [TerminalSession] {
+        let cutoff = Date().addingTimeInterval(-interval)
+        return sessions.values
+            .filter { $0.lastCommandAt < cutoff }
+            .sorted { $0.lastCommandAt < $1.lastCommandAt }
+    }
+
+    /// Remove multiple sessions by name, returning the removed sessions
+    func removeAll(names: [String]) -> [TerminalSession] {
+        var removed: [TerminalSession] = []
+        for name in names {
+            if let session = sessions.removeValue(forKey: name) {
+                removed.append(session)
+            }
+        }
+        return removed
+    }
 }
 
 /// Global session manager
@@ -164,35 +183,20 @@ private func terminalSendToTab(tabIndex: Int, command: String) -> String {
     """
 }
 
-/// Generate AppleScript to send command in a new tab (Warp/Alacritty — no native tab targeting)
-private func keystrokeSendCommand(terminal: TerminalConfig.TerminalType, command: String) -> String {
+/// Generate AppleScript to send command to the CURRENT active tab (Warp/Alacritty — no native tab targeting)
+/// Used by send_to_session to reuse existing tabs instead of opening new ones.
+private func keystrokeSendToCurrentTab(terminal: TerminalConfig.TerminalType, command: String) -> String {
     let escapedCommand = command.replacingOccurrences(of: "\\", with: "\\\\")
                                 .replacingOccurrences(of: "\"", with: "\\\"")
-    if terminal == .warp || terminal == .warpPreview {
-        return """
-        tell application "\(terminal.rawValue)" to activate
-        delay 0.5
-        tell application "System Events"
-            tell process "\(terminal.rawValue)"
-                click menu item "New Tab" of menu "File" of menu bar 1
-            end tell
-            delay 0.8
-            keystroke "\(escapedCommand)"
-            delay 0.2
-            keystroke return
-        end tell
-        """
-    } else {
-        return """
-        tell application "\(terminal.rawValue)" to activate
-        delay 0.5
-        tell application "System Events"
-            keystroke "\(escapedCommand)"
-            delay 0.2
-            keystroke return
-        end tell
-        """
-    }
+    return """
+    tell application "\(terminal.rawValue)" to activate
+    delay 0.3
+    tell application "System Events"
+        keystroke "\(escapedCommand)"
+        delay 0.2
+        keystroke return
+    end tell
+    """
 }
 
 /// Generate AppleScript to close the current tab
@@ -388,8 +392,8 @@ func handleSendToSession(params: CallTool.Parameters, logger: Logger) async -> C
         script = terminalSendToTab(tabIndex: session.tabIndex, command: command)
     case .warp, .warpPreview, .alacritty:
         // Warp and Alacritty don't support tab targeting via AppleScript
-        // Best effort: activate terminal and type
-        script = keystrokeSendCommand(terminal: terminal, command: command)
+        // Best effort: activate terminal and type into the current active tab (no new tab)
+        script = keystrokeSendToCurrentTab(terminal: terminal, command: command)
     }
 
     let result = executeAppleScript(script, logger: logger)
@@ -485,6 +489,66 @@ func handleCloseSession(params: CallTool.Parameters, logger: Logger) async -> Ca
         • Commands sent: \(session.commandCount)
         \(closeTab ? "• Terminal tab close signal sent." : "• Terminal tab left open (pass close_tab: true to close).")
         """)],
+        isError: false
+    )
+}
+
+/// Handle cleanup_sessions tool — remove stale sessions and optionally close their tabs
+func handleCleanupSessions(params: CallTool.Parameters, logger: Logger) async -> CallTool.Result {
+    // Default: 30 minutes of inactivity = stale
+    var staleMinutes: Double = 30
+    if let arguments = params.arguments,
+       let minutesValue = arguments["inactive_minutes"],
+       case .string(let minsStr) = minutesValue,
+       let mins = Double(minsStr) {
+        staleMinutes = mins
+    }
+
+    var closeTabs = true
+    if let arguments = params.arguments,
+       let closeArg = arguments["close_tabs"],
+       case .bool(let shouldClose) = closeArg {
+        closeTabs = shouldClose
+    }
+
+    let interval = staleMinutes * 60 // convert to seconds
+    let staleSessions = await sessionManager.staleSessions(olderThan: interval)
+
+    if staleSessions.isEmpty {
+        return CallTool.Result(
+            content: [.text("✅ No stale sessions found (threshold: \(Int(staleMinutes)) minutes of inactivity).")],
+            isError: false
+        )
+    }
+
+    let staleNames = staleSessions.map { $0.name }
+    let removed = await sessionManager.removeAll(names: staleNames)
+
+    // Close terminal tabs if requested
+    if closeTabs {
+        for session in removed {
+            if let terminal = TerminalConfig.TerminalType(rawValue: session.terminal) {
+                let script = closeTabAppleScript(for: terminal)
+                executeAppleScript(script, logger: logger)
+                // Brief delay between tab closes to avoid AppleScript race conditions
+                try? await Task.sleep(nanoseconds: 300_000_000)
+            }
+        }
+    }
+
+    let formatter = ISO8601DateFormatter()
+    var output = "🧹 Cleaned up \(removed.count) stale session(s) (inactive > \(Int(staleMinutes)) min):\n"
+    for session in removed {
+        output += "\n  • \(session.name) — last active: \(formatter.string(from: session.lastCommandAt)), commands: \(session.commandCount)"
+    }
+    if closeTabs {
+        output += "\n\n• Terminal tabs closed."
+    } else {
+        output += "\n\n• Sessions removed from tracking (tabs left open)."
+    }
+
+    return CallTool.Result(
+        content: [.text(output)],
         isError: false
     )
 }
