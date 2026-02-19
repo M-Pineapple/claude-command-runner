@@ -326,7 +326,7 @@ func handleOpenTerminalTab(params: CallTool.Parameters, logger: Logger) async ->
 
     // Optionally send an initial command (e.g. cd to directory)
     if let dirArg = arguments["directory"], case .string(let dir) = dirArg {
-        let cdScript = createAppleScript(for: terminal, command: "cd \"\(dir)\"")
+        let cdScript = keystrokeSendToCurrentTab(terminal: terminal, command: "cd \"\(dir)\"")
         executeAppleScript(cdScript, logger: logger)
         // Small delay for cd to complete
         try? await Task.sleep(nanoseconds: 500_000_000)

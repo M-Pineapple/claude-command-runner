@@ -6,16 +6,11 @@ import Foundation
 func createAppleScript(for terminal: TerminalConfig.TerminalType, command: String) -> String {
     switch terminal {
     case .warp, .warpPreview:
-        // Open a new tab before sending command to avoid interfering with running commands
+        // Reuse the current active tab — only open_terminal_tab should create new tabs
         return """
         tell application "\(terminal.rawValue)" to activate
-        delay 0.5
+        delay 0.3
         tell application "System Events"
-            tell process "\(terminal.rawValue)"
-                -- Open new tab so concurrent commands don't collide
-                click menu item "New Tab" of menu "File" of menu bar 1
-            end tell
-            delay 0.8
             keystroke "\(command)"
             delay 0.2
             keystroke return
